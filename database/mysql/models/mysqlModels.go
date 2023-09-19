@@ -1,33 +1,30 @@
 package mysql_models
 
 import (
-	"encoding/json"
 	"fmt"
 	mysql_configer "quick_forge/database/mysql"
 )
 
-func GetAllDataAsJSON(tableName string) (string, error) {
+func GetAllData(tableName string) ([]map[string]interface{}, error) {
 	db := mysql_configer.InitDB()
 	defer db.Close()
 	query := fmt.Sprintf("SELECT * FROM %s", tableName)
 	rows, err := db.Query(query)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer rows.Close()
-
-	// Create a slice to hold the results
-	var results []map[string]interface{}
 
 	// Get column names
 	columnNames, err := rows.Columns()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// Iterate over the rows
-	for rows.Next() {
+	var results []map[string]interface{}
 
+	for rows.Next() {
+		// Create a slice to hold the column values
 		columns := make([]interface{}, len(columnNames))
 		columnPointers := make([]interface{}, len(columnNames))
 
@@ -37,24 +34,20 @@ func GetAllDataAsJSON(tableName string) (string, error) {
 
 		err := rows.Scan(columnPointers...)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		rowData := make(map[string]interface{})
 
 		for i, colName := range columnNames {
 			val := columnPointers[i].(*interface{})
-			rowData[colName] = *val
+			if bytesVal, ok := (*val).([]byte); ok {
+				rowData[colName] = string(bytesVal)
+			} else {
+				rowData[colName] = *val
+			}
 		}
-
 		results = append(results, rowData)
 	}
-	fmt.Println(results)
-	// Marshal the results to JSON format
-	jsonData, err := json.Marshal(results)
-	if err != nil {
-		return "", err
-	}
-
-	return string(jsonData), nil
+	return results, nil
 }

@@ -11,12 +11,12 @@ func MethodAllowedMiddleware(config utils.ProjectConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get the request method
 		requestMethod := c.Request.Method
-
-		// Get the requested endpoint
 		requestedEndpoint := c.Param("endpoint")
+		var routeInfo utils.Route
 		endpointAllowed := false
 		for _, route := range config.Routes {
 			if route.Endpoint == requestedEndpoint {
+				routeInfo = route
 				switch requestMethod {
 				case "GET":
 					endpointAllowed = route.Methods.Get != nil && *route.Methods.Get
@@ -31,10 +31,12 @@ func MethodAllowedMiddleware(config utils.ProjectConfig) gin.HandlerFunc {
 			}
 		}
 		if endpointAllowed {
+			c.Set("routeInfo", routeInfo)
 			c.Next()
 		} else {
 			c.JSON(http.StatusMethodNotAllowed, gin.H{
-				"error": "Method Not Allowed",
+				"error":   "Method Not Allowed",
+				"message": requestedEndpoint + "is not defined in project",
 			})
 			c.Abort()
 		}
