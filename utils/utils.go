@@ -37,6 +37,7 @@ type ProjectConfig struct {
 	ProjectName string   `json:"project_name"`
 	DB          Database `json:"db"`
 	Routes      []Route  `json:"routes"`
+	Port        string   `json:"port"`
 }
 
 func GetProjectConfig() ProjectConfig {

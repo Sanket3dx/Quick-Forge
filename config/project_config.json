@@ -1,44 +1,42 @@
 {
-    "project_name": "members",
+    "project_name": "demo_project",
+    "port" : ":8054",
     "db": {
         "db_type": "mysql",
         "host": "127.0.0.1",
         "port": "3306",
         "username": "root",
-        "password": "plus91",
-        "database_name": "sanket"
+        "password": "pass",
+        "database_name": "demo_name"
     },
     "routes": [
         {
-            "endpoint": "members",
+            "endpoint": "endpoint",
             "methods": {
                 "get": true,
                 "put": true,
                 "post": true,
                 "delete": true
             },
-            "db_table_name": "members",
+            "db_table_name": "demo_tbl_name",
             "db_table_struct": {
                 "id": "int",
-                "createdDate": "string",
                 "name": "string",
-                "parentId": "int"
+                "createdDate": "string"
             }
         },
         {
-            "endpoint": "sanket",
+            "endpoint": "endpoint2",
             "methods": {
                 "get": true,
                 "put": true,
                 "post": true,
                 "delete": true
             },
-            "db_table_name": "sanket",
+            "db_table_name": "demo_tbl_2",
             "db_table_struct": {
                 "id": "int",
-                "createdDate": "string",
-                "name": "string",
-                "parentId": "int"
+                "createdDate": "string"
             }
         }
     ]
