@@ -27,10 +27,10 @@ type RouteMethod struct {
 }
 
 type Route struct {
-	Endpoint      string            `json:"endpoint"`
-	DBTableName   string            `json:"db_table_name"`
-	Methods       RouteMethod       `json:"methods"`
-	DBTableStruct map[string]string `json:"db_table_struct"`
+	Endpoint      string                 `json:"endpoint"`
+	DBTableName   string                 `json:"db_table_name"`
+	Methods       RouteMethod            `json:"methods"`
+	DBTableStruct map[string]interface{} `json:"db_table_struct"`
 }
 
 type ProjectConfig struct {
