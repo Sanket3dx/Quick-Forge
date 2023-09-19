@@ -43,8 +43,34 @@ func GetAllhandler(ctx *gin.Context) {
 }
 
 func Gethandler(ctx *gin.Context) {
+	routeInfo, exists := ctx.Get("routeInfo")
+	if !exists {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Route info not found in context",
+		})
+		ctx.Abort()
+		return
+	}
+	route, ok := routeInfo.(utils.Route)
+
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Invalid routeInfo type",
+		})
+		ctx.Abort()
+		return
+	}
+	data, err := mysql_models.GetData(route, ctx.Param("arg"))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "error fetching data from DB",
+		})
+		ctx.Abort()
+		return
+	}
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "GET request recived at Gethandler",
+		"error": false,
+		"data":  data,
 	})
 }
 

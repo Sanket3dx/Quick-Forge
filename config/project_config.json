@@ -20,6 +20,7 @@
             },
             "db_table_name": "demo_tbl_name",
             "db_table_struct": {
+                "primary_key": "id",
                 "id": "int",
                 "name": "string",
                 "createdDate": "string"
@@ -35,6 +36,7 @@
             },
             "db_table_name": "demo_tbl_2",
             "db_table_struct": {
+                "primary_key": "id",
                 "id": "int",
                 "createdDate": "string"
             }
