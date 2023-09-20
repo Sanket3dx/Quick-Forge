@@ -54,7 +54,7 @@ func GetAllData(tableName string) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func GetData(route utils.Route, arg string) ([]map[string]interface{}, error) {
+func GetData(route utils.Route, arg string) (map[string]interface{}, error) {
 	db := mysql_configer.InitDB()
 	defer db.Close()
 
@@ -79,7 +79,7 @@ func GetData(route utils.Route, arg string) ([]map[string]interface{}, error) {
 		return nil, err
 	}
 
-	var results []map[string]interface{}
+	var results map[string]interface{}
 
 	for rows.Next() {
 		// Create a slice to hold the column values
@@ -105,7 +105,7 @@ func GetData(route utils.Route, arg string) ([]map[string]interface{}, error) {
 				rowData[colName] = *val
 			}
 		}
-		results = append(results, rowData)
+		results = rowData
 	}
 	return results, nil
 }
