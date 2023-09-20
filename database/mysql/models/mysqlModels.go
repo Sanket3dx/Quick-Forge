@@ -4,6 +4,7 @@ import (
 	"fmt"
 	mysql_configer "quick_forge/database/mysql"
 	"quick_forge/utils"
+	"strings"
 )
 
 func GetAllData(tableName string) ([]map[string]interface{}, error) {
@@ -107,4 +108,40 @@ func GetData(route utils.Route, arg string) ([]map[string]interface{}, error) {
 		results = append(results, rowData)
 	}
 	return results, nil
+}
+
+func InsertData(tableName string, data map[string]interface{}) (int64, error) {
+	db := mysql_configer.InitDB()
+	defer db.Close()
+
+	// Create placeholders for the column names and values
+	var columns []string
+	var placeholders []string
+	var values []interface{}
+
+	for colName, colValue := range data {
+		columns = append(columns, colName)
+		placeholders = append(placeholders, "?")
+		values = append(values, colValue)
+	}
+
+	// Build the SQL query
+	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
+		tableName,
+		strings.Join(columns, ", "),
+		strings.Join(placeholders, ", "))
+
+	// Execute the insert query with prepared statement
+	result, err := db.Exec(query, values...)
+	if err != nil {
+		return 0, err
+	}
+
+	// Get the ID of the newly inserted row
+	insertID, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return insertID, nil
 }

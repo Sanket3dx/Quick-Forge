@@ -22,6 +22,14 @@ func MethodAllowedMiddleware(config utils.ProjectConfig) gin.HandlerFunc {
 				case "GET":
 					endpointAllowed = route.Methods.Get != nil && *route.Methods.Get
 				case "POST":
+					if c.Request.ContentLength == 0 {
+						c.JSON(http.StatusBadRequest, gin.H{
+							"error":   "Empty Request Body",
+							"message": "POST request body is empty",
+						})
+						c.Abort()
+						return
+					}
 					endpointAllowed = route.Methods.Post != nil && *route.Methods.Post
 				case "PUT":
 					endpointAllowed = route.Methods.Put != nil && *route.Methods.Put
@@ -48,18 +56,14 @@ func ValidateRequest() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		routeConfig, exists := c.Get("routeInfo")
 		if !exists {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Route info not found in context",
-			})
-			c.Abort()
+			utils.HandleError(c, http.StatusBadRequest, "Route info not found in context")
 			return
 		}
 		route, _ := routeConfig.(utils.Route)
 		var requestBody map[string]interface{}
 		err := c.ShouldBindJSON(&requestBody)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			c.Abort()
+			utils.HandleError(c, http.StatusBadRequest, "Invalid request body")
 			return
 		}
 
@@ -70,14 +74,13 @@ func ValidateRequest() gin.HandlerFunc {
 				if requiredExists && required.(bool) {
 					_, exists := requestBody[paramName]
 					if !exists {
-						c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Required parameter '%s' is missing in the request body", paramName)})
-						c.Abort()
+						utils.HandleError(c, http.StatusBadRequest, fmt.Sprintf("Required parameter '%s' is missing in the request body", paramName))
 						return
 					}
 				}
 			}
 		}
-
+		c.Set("validatedRequestBody", requestBody)
 		c.Next()
 	}
 }

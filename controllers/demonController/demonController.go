@@ -12,27 +12,18 @@ func GetAllhandler(ctx *gin.Context) {
 	routeInfo, exists := ctx.Get("routeInfo")
 
 	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Route info not found in context",
-		})
-		ctx.Abort()
+		utils.HandleError(ctx, http.StatusInternalServerError, "Route info not found in context")
 		return
 	}
 	route, ok := routeInfo.(utils.Route)
 	if !ok {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Invalid routeInfo type",
-		})
-		ctx.Abort()
+		utils.HandleError(ctx, http.StatusInternalServerError, "Invalid routeInfo type")
 		return
 	}
 
 	allData, err := mysql_models.GetAllData(route.DBTableName)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error": "error fetching data from DB",
-		})
-		ctx.Abort()
+		utils.HandleError(ctx, http.StatusInternalServerError, "error fetching data from DB")
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{
@@ -45,27 +36,18 @@ func GetAllhandler(ctx *gin.Context) {
 func Gethandler(ctx *gin.Context) {
 	routeInfo, exists := ctx.Get("routeInfo")
 	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Route info not found in context",
-		})
-		ctx.Abort()
+		utils.HandleError(ctx, http.StatusInternalServerError, "Route info not found in context")
 		return
 	}
 	route, ok := routeInfo.(utils.Route)
 
 	if !ok {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Invalid routeInfo type",
-		})
-		ctx.Abort()
+		utils.HandleError(ctx, http.StatusInternalServerError, "Invalid routeInfo type")
 		return
 	}
 	data, err := mysql_models.GetData(route, ctx.Param("arg"))
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error": "error fetching data from DB",
-		})
-		ctx.Abort()
+		utils.HandleError(ctx, http.StatusInternalServerError, "error fetching data from DB")
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{
@@ -75,8 +57,41 @@ func Gethandler(ctx *gin.Context) {
 }
 
 func Posthandler(ctx *gin.Context) {
+	// Retrieve route information from context
+	routeInfo, exists := ctx.Get("routeInfo")
+	if !exists {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Route info not found in context")
+		return
+	}
+
+	route, ok := routeInfo.(utils.Route)
+	if !ok {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Invalid routeInfo type")
+		return
+	}
+
+	validatedRequestBody, exists := ctx.Get("validatedRequestBody")
+	if !exists {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Validated request body not found in context")
+		return
+	}
+
+	data, ok := validatedRequestBody.(map[string]interface{})
+	if !ok {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Invalid validatedRequestBody type")
+		return
+	}
+
+	// Insert data into the database
+	insertedID, err := mysql_models.InsertData(route.DBTableName, data)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Record insertion failed")
+		return
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "POST request recived at Posthandler",
+		"error":     false,
+		"record_id": insertedID,
 	})
 }
 

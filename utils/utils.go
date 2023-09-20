@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Database struct {
@@ -79,4 +81,11 @@ func IsEndpointAllowed(config ProjectConfig, endpoint string, method string) boo
 		}
 	}
 	return false
+}
+
+func HandleError(ctx *gin.Context, statusCode int, errorMessage string) {
+	ctx.JSON(statusCode, gin.H{
+		"error": errorMessage,
+	})
+	ctx.Abort()
 }
