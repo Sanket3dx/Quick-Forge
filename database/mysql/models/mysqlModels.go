@@ -145,3 +145,70 @@ func InsertData(tableName string, data map[string]interface{}) (int64, error) {
 
 	return insertID, nil
 }
+
+func UpdateData(route utils.Route, data map[string]interface{}, arg string) error {
+	db := mysql_configer.InitDB()
+	defer db.Close()
+	primaryKey, primaryKeyExists := route.DBTableStruct["primary_key"]
+	if !primaryKeyExists {
+		return fmt.Errorf("primary key not found in DBTableStruct")
+	}
+	var setClause []string
+	var values []interface{}
+
+	for colName, colValue := range data {
+		setClause = append(setClause, fmt.Sprintf("%s = ?", colName))
+		values = append(values, colValue)
+	}
+
+	// Build the SQL query
+	query := fmt.Sprintf("UPDATE %s SET %s WHERE %s = ?",
+		route.DBTableName,
+		strings.Join(setClause, ", "),
+		primaryKey)
+
+	// Execute the update query with a prepared statement
+	result, err := db.Exec(query, append(values, arg)...)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no rows were updated")
+	}
+
+	return nil
+}
+
+func DeleteData(route utils.Route, arg string) error {
+	db := mysql_configer.InitDB()
+	defer db.Close()
+
+	// Ensure that the primary key column exists in the struct
+	primaryKey, primaryKeyExists := route.DBTableStruct["primary_key"]
+	if !primaryKeyExists {
+		return fmt.Errorf("primary key not found in DBTableStruct")
+	}
+	query := fmt.Sprintf("DELETE FROM %s WHERE %s = ?", route.DBTableName, primaryKey)
+
+	result, err := db.Exec(query, arg)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no rows were deleted")
+	}
+
+	return nil
+}

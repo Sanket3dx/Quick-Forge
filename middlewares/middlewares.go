@@ -45,7 +45,7 @@ func MethodAllowedMiddleware(config utils.ProjectConfig) gin.HandlerFunc {
 		} else {
 			c.JSON(http.StatusMethodNotAllowed, gin.H{
 				"error":   "Method Not Allowed",
-				"message": requestedEndpoint + "is not defined in project",
+				"message": requestedEndpoint + " is not defined in project",
 			})
 			c.Abort()
 		}

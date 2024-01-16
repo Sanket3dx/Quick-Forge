@@ -96,13 +96,65 @@ func Posthandler(ctx *gin.Context) {
 }
 
 func Puthandler(ctx *gin.Context) {
+	routeInfo, exists := ctx.Get("routeInfo")
+	if !exists {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Route info not found in context")
+		return
+	}
+
+	route, ok := routeInfo.(utils.Route)
+	if !ok {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Invalid routeInfo type")
+		return
+	}
+
+	validatedRequestBody, exists := ctx.Get("validatedRequestBody")
+	if !exists {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Validated request body not found in context")
+		return
+	}
+
+	data, ok := validatedRequestBody.(map[string]interface{})
+	if !ok {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Invalid validatedRequestBody type")
+		return
+	}
+
+	// Update data in the database
+	err := mysql_models.UpdateData(route, data, ctx.Param("arg"))
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Record update failed")
+		return
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "PUT request recived at Puthandler",
+		"error":   false,
+		"message": "Record updated successfully",
 	})
 }
 
 func Deletehandler(ctx *gin.Context) {
+	routeInfo, exists := ctx.Get("routeInfo")
+	if !exists {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Route info not found in context")
+		return
+	}
+
+	route, ok := routeInfo.(utils.Route)
+	if !ok {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Invalid routeInfo type")
+		return
+	}
+
+	// Delete data from the database
+	err := mysql_models.DeleteData(route, ctx.Param("arg"))
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Record deletion failed")
+		return
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "DELETE request recived at Deletehandler",
+		"error":   false,
+		"message": "Record deleted successfully",
 	})
 }
