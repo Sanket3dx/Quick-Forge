@@ -1,7 +1,7 @@
 package main
 
 import (
-	demonRoutes "quick_forge/routes/demon"
+	demonRoutes "quick_forge/routes"
 )
 
 func main() {

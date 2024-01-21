@@ -45,7 +45,7 @@ type ProjectConfig struct {
 func GetProjectConfig() ProjectConfig {
 	var config ProjectConfig
 	mydir, _ := os.Getwd()
-	filePath := filepath.Join(mydir, "config", "project_config.json")
+	filePath := filepath.Join(mydir, "/config", "project_config.json")
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalf("Error opening JSON file: %v", err)
