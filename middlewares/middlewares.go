@@ -43,6 +43,7 @@ func MethodAllowedMiddleware(config utils.ProjectConfig) gin.HandlerFunc {
 		}
 		if endpointAllowed {
 			c.Set("routeInfo", routeInfo)
+			c.Set("dbType", config.DB.DBType)
 			c.Next()
 		} else {
 			c.JSON(http.StatusMethodNotAllowed, gin.H{
