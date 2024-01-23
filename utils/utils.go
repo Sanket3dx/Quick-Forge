@@ -42,6 +42,10 @@ type ProjectConfig struct {
 	Port        string   `json:"port"`
 }
 
+type WebSocketMessage struct {
+	Message string `json:"message"`
+}
+
 func GetProjectConfig() ProjectConfig {
 	var config ProjectConfig
 	mydir, _ := os.Getwd()

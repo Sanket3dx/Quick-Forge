@@ -10,6 +10,17 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
+func WebsoketBrodcaster(broadcast *chan utils.WebSocketMessage) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		message := fmt.Sprintf("Request received: Method=%s, URI=%s, Client=%s", c.Request.Method, c.Request.RequestURI, c.ClientIP())
+		// Broadcast the combined message
+		go brodcast(broadcast, message)
+	}
+}
+
+func brodcast(broadcast *chan utils.WebSocketMessage, message string) {
+	*broadcast <- utils.WebSocketMessage{Message: message}
+}
 func MethodAllowedMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		config := utils.GetProjectConfig()
