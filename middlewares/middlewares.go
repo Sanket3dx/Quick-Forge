@@ -10,8 +10,9 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-func MethodAllowedMiddleware(config utils.ProjectConfig) gin.HandlerFunc {
+func MethodAllowedMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		config := utils.GetProjectConfig()
 		// Get the request method
 		requestMethod := c.Request.Method
 		requestedEndpoint := c.Param("endpoint")

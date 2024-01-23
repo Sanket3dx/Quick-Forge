@@ -83,6 +83,43 @@ func IsEndpointAllowed(config ProjectConfig, endpoint string, method string) boo
 	return false
 }
 
+func AddRoute(newRoute Route) error {
+	config := GetProjectConfig()
+
+	for _, route := range config.Routes {
+		if route.Endpoint == newRoute.Endpoint {
+			return fmt.Errorf("Endpoint '%s' already exists", newRoute.Endpoint)
+		}
+	}
+
+	config.Routes = append(config.Routes, newRoute)
+
+	err := saveProjectConfig(config)
+	if err != nil {
+		return fmt.Errorf("Error saving project configuration: %v", err)
+	}
+
+	return nil
+}
+
+func saveProjectConfig(config ProjectConfig) error {
+	mydir, _ := os.Getwd()
+	filePath := filepath.Join(mydir, "/config", "project_config.json")
+
+	jsonData, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return fmt.Errorf("Error encoding JSON: %v", err)
+	}
+
+	err = ioutil.WriteFile(filePath, jsonData, 0644)
+	if err != nil {
+		return fmt.Errorf("Error writing to JSON file: %v", err)
+	}
+
+	fmt.Println("Project configuration updated and saved.")
+	return nil
+}
+
 func HandleError(ctx *gin.Context, statusCode int, errorMessage string) {
 	ctx.JSON(statusCode, gin.H{
 		"error": errorMessage,

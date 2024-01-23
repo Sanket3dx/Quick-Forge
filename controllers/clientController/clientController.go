@@ -33,6 +33,7 @@ func LoginHandler(c *gin.Context) {
 
 	// Authenticate user
 	user, err := mysql_models.AuthenticateUser(loginRequest.Username, loginRequest.Password)
+
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, LoginResponse{Message: "Authentication failed"})
 		return
@@ -71,4 +72,21 @@ func GetAllRoutes(c *gin.Context) {
 		"error": false,
 		"data":  config.Routes,
 	})
+}
+
+func AddRouteHandler(c *gin.Context) {
+
+	var newRoute utils.Route
+	if err := c.ShouldBindJSON(&newRoute); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": "Invalid request"})
+		return
+	}
+
+	err := utils.AddRoute(newRoute)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"error": false, "message": "New route added successfully"})
 }

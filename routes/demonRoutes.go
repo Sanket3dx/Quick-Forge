@@ -25,7 +25,7 @@ func InitDemonRouter() {
 	}))
 	demonRouter := router.Group("/" + projectName)
 	{
-		demonRouter.Use(middlewares.MethodAllowedMiddleware(config))
+		demonRouter.Use(middlewares.MethodAllowedMiddleware())
 		demonRouter.GET("/:endpoint", demonController.GetAllhandler)
 		demonRouter.GET("/:endpoint/:arg", demonController.Gethandler)
 		demonRouter.POST("/:endpoint", middlewares.ValidateRequest(), demonController.Posthandler)
@@ -36,7 +36,7 @@ func InitDemonRouter() {
 	{
 		clientRouter.POST("/login", clientcontroller.LoginHandler)
 		clientRouter.GET("/routes", middlewares.AuthMiddleware(), clientcontroller.GetAllRoutes)
-
+		clientRouter.POST("/routes", middlewares.AuthMiddleware(), clientcontroller.AddRouteHandler)
 	}
 
 	fmt.Println("🤘 Routes Loaded ...✅ ")

@@ -1,7 +1,6 @@
 package demonController
 
 import (
-	"fmt"
 	"net/http"
 	mongooDbModel "quick_forge/database/mongooDb/models"
 	mysql_models "quick_forge/database/mysql/models"
@@ -85,7 +84,6 @@ func Gethandler(ctx *gin.Context) {
 	}
 
 	if err != nil {
-		fmt.Println(err)
 		utils.HandleError(ctx, http.StatusInternalServerError, "Error fetching data from DB")
 		return
 	}
