@@ -5,6 +5,7 @@ import (
 	"net/http"
 	clientcontroller "quick_forge/controllers/clientController"
 	"quick_forge/controllers/demonController"
+	mysql_configer "quick_forge/database/mysql"
 	"quick_forge/middlewares"
 	"quick_forge/utils"
 	"sync"
@@ -31,6 +32,11 @@ var broadcast = make(chan utils.WebSocketMessage) // channel to broadcast messag
 func InitDemonRouter() {
 	config := utils.GetProjectConfig()
 	projectName := config.ProjectName
+	if config.DB.DBType == "mysql" {
+		for _, val := range config.Routes {
+			mysql_configer.CreateTableIfNotExist(val)
+		}
+	}
 	fmt.Println("👊 Config files are Loaded ...✅ ")
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
