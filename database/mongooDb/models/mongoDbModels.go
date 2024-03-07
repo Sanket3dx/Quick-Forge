@@ -2,6 +2,7 @@ package mongooDbModel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -170,4 +171,30 @@ func DeleteData(route utils.Route, arg string) error {
 	}
 
 	return nil
+}
+
+func AuthenticateUser(username, password string) (bson.M, error) {
+	db, err := mongoodb.InitDB()
+	if err != nil {
+		return nil, err
+	}
+	defer mongoodb.CloseDB(db.Client())
+
+	collection := db.Collection("user_logins")
+
+	filter := bson.M{"username": username, "password": password}
+	result := collection.FindOne(context.Background(), filter)
+	if err := result.Err(); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil // User not found
+		}
+		return nil, err // Other error occurred
+	}
+
+	var user bson.M
+	if err := result.Decode(&user); err != nil {
+		return nil, err // Error decoding user
+	}
+
+	return user, nil
 }

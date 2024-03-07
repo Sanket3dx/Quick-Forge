@@ -11,12 +11,7 @@ import (
 
 func InitDB() (*mongo.Database, error) {
 	dbConfig := utils.GetProjectConfig().DB
-	// mongodb://localhost:27017/
-	// uri := fmt.Sprintf("mongodb://%s:%s@%s/%s",
-	// 	dbConfig.Username, dbConfig.Password, dbConfig.Host, dbConfig.DatabaseName)
-	uri := fmt.Sprintf("mongodb://%s:%s/",
-		dbConfig.Host, dbConfig.Port)
-
+	uri := dbConfig.MongoString
 	clientOptions := options.Client().ApplyURI(uri)
 
 	client, err := mongo.Connect(context.Background(), clientOptions)

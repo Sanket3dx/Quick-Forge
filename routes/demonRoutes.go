@@ -39,6 +39,7 @@ func InitDemonRouter() {
 	}
 	fmt.Println("👊 Config files are Loaded ...✅ ")
 	router := gin.Default()
+
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"}, // Allow all origins
 		AllowMethods:     []string{"*"}, // Allow all HTTP methods
@@ -63,6 +64,8 @@ func InitDemonRouter() {
 		clientRouter.POST("/login", clientcontroller.LoginHandler)
 		clientRouter.GET("/routes", middlewares.AuthMiddleware(), clientcontroller.GetAllRoutes)
 		clientRouter.POST("/routes", middlewares.AuthMiddleware(), clientcontroller.AddRouteHandler)
+		clientRouter.PUT("/routes", middlewares.AuthMiddleware(), clientcontroller.UpdateRouteHandler)
+		clientRouter.DELETE("/routes/:endpoint", middlewares.AuthMiddleware(), clientcontroller.DeleteRouteHandler)
 		clientRouter.GET("/ws", func(c *gin.Context) {
 			w := c.Writer
 			r := c.Request
@@ -91,6 +94,101 @@ func InitDemonRouter() {
 					break
 				}
 			}
+		})
+		clientRouter.GET("/console", func(c *gin.Context) {
+			// Serve the HTML content directly
+			htmlContent := `
+				<!DOCTYPE html>
+				<html lang="en">
+				<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>WebSocket Terminal</title>
+				<style>
+					body {
+						font-family: monospace;
+						background-color: #000;
+						color: #0f0;
+						padding: 20px;
+					}
+					#terminal {
+						background-color: #000;
+						color: #0f0;
+						padding: 10px;
+						border: 1px solid #0f0;
+						overflow-y: auto;
+						height: 300px;
+					}
+					input[type="text"] {
+						background-color: transparent;
+						border: none;
+						color: #0f0;
+						width: calc(100% - 20px);
+						padding: 5px;
+						font-family: monospace;
+					}
+					input[type="text"]:focus {
+						outline: none;
+					}
+				</style>
+				</head>
+				<body>
+				<div id="terminal"></div>
+			
+				<script>
+					const terminal = document.getElementById('terminal');
+					// const input = document.getElementById('input');
+					const socket = new WebSocket('wss://1f98-2409-40c2-100b-91ee-1758-2206-2990-2aec.ngrok-free.app/x-client/ws');
+				
+					// Connection opened
+					socket.addEventListener('open', (event) => {
+						writeToTerminal('WebSocket connection opened');
+					});
+				
+					// Listen for messages
+					socket.addEventListener('message', (event) => {
+						writeToTerminal('Received message: ' + event.data);
+						// Handle the received message as needed
+					});
+				
+					// Connection closed
+					socket.addEventListener('close', (event) => {
+						writeToTerminal('WebSocket connection closed');
+					});
+				
+					// Handle errors
+					socket.addEventListener('error', (event) => {
+						writeToTerminal('WebSocket error: ' + event.message);
+					});
+				
+					// Send a message
+					function sendMessage() {
+						const message = input.value;
+						socket.send(message);
+						writeToTerminal('Sent message: ' + message);
+						input.value = '';
+					}
+				
+					// Function to write to terminal
+					function writeToTerminal(message) {
+						const line = document.createElement('div');
+						line.textContent = message;
+						terminal.appendChild(line);
+						terminal.scrollTop = terminal.scrollHeight;
+					}
+				
+					// Listen for Enter key press to send message
+					input.addEventListener('keyup', (event) => {
+						if (event.key === 'Enter') {
+							sendMessage();
+						}
+					});
+				</script>
+				</body>
+				</html>
+				`
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusOK, htmlContent)
 		})
 
 	}

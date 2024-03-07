@@ -19,6 +19,7 @@ type Database struct {
 	Password     string `json:"password"`
 	DatabaseName string `json:"database_name"`
 	Port         string `json:"port"`
+	MongoString  string `json:"mongo_string"`
 }
 
 type RouteMethod struct {
@@ -29,10 +30,10 @@ type RouteMethod struct {
 }
 
 type Route struct {
-	Endpoint      string                 `json:"endpoint"`
-	DBTableName   string                 `json:"db_table_name"`
-	Methods       RouteMethod            `json:"methods"`
-	DBTableStruct map[string]interface{} `json:"db_table_struct"`
+	Endpoint      string                 `json:"endpoint" binding:"required"`
+	DBTableName   string                 `json:"db_table_name" binding:"required"`
+	Methods       RouteMethod            `json:"methods" binding:"required"`
+	DBTableStruct map[string]interface{} `json:"db_table_struct" binding:"required"`
 }
 
 type ProjectConfig struct {
@@ -98,6 +99,56 @@ func AddRoute(newRoute Route) error {
 
 	config.Routes = append(config.Routes, newRoute)
 
+	err := saveProjectConfig(config)
+	if err != nil {
+		return fmt.Errorf("Error saving project configuration: %v", err)
+	}
+
+	return nil
+}
+
+func UpdateRoute(updatedRoute Route) error {
+	config := GetProjectConfig()
+
+	// Find the index of the route to update
+	var indexToUpdate int = -1
+	for i, route := range config.Routes {
+		if route.Endpoint == updatedRoute.Endpoint {
+			indexToUpdate = i
+			break
+		}
+	}
+
+	if indexToUpdate == -1 {
+		return fmt.Errorf("Route '%s' not found", updatedRoute.Endpoint)
+	}
+
+	// Update the route
+	config.Routes[indexToUpdate] = updatedRoute
+
+	err := saveProjectConfig(config)
+	if err != nil {
+		return fmt.Errorf("Error saving project configuration: %v", err)
+	}
+
+	return nil
+}
+
+func DeleteRoute(endpoint string) error {
+	config := GetProjectConfig()
+	var indexToDelete int = -1
+	for i, route := range config.Routes {
+		if route.Endpoint == endpoint {
+			indexToDelete = i
+			break
+		}
+	}
+	if indexToDelete == -1 {
+		return fmt.Errorf("Route '%s' not found", endpoint)
+	}
+	config.Routes = append(config.Routes[:indexToDelete], config.Routes[indexToDelete+1:]...)
+
+	// Save the updated configuration
 	err := saveProjectConfig(config)
 	if err != nil {
 		return fmt.Errorf("Error saving project configuration: %v", err)

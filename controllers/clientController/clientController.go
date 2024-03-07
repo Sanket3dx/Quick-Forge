@@ -3,9 +3,9 @@ package clientcontroller
 import (
 	"fmt"
 	"net/http"
-	"time"
-
+	mongooDbModel "quick_forge/database/mongooDb/models"
 	mysql_models "quick_forge/database/mysql/models"
+	"time"
 
 	"quick_forge/utils"
 
@@ -31,37 +31,77 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
-	// Authenticate user
-	user, err := mysql_models.AuthenticateUser(loginRequest.Username, loginRequest.Password)
+	config := utils.GetProjectConfig()
+	secretKey := []byte("kaHFVKAJHFVKAJHFOIWGYFOIAUSFOAKSbe8127467824678fsd78gtasd68trgasdrgsrds7df8")
 
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, LoginResponse{Message: "Authentication failed"})
-		return
-	}
-	if user["user_id"] != 0 && user["user_id"] != nil {
-		claims := jwt.MapClaims{
-			"user_id": user["user_id"],
-			"exp":     time.Now().Add(time.Hour * 1).Unix(), // Token will expire in 1 hour
-			"nbf":     time.Now().Unix(),
-			"iat":     time.Now().Unix(),
-		}
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		secretKey := []byte("kaHFVKAJHFVKAJHFOIWGYFOIAUSFOAKSbe8127467824678fsd78gtasd68trgasdrgsrds7df8")
-		// Sign the token with your secret key
-		tokenString, err := token.SignedString(secretKey)
+	switch config.DB.DBType {
+
+	case "mysql":
+		// Authenticate user
+		user, err := mysql_models.AuthenticateUser(loginRequest.Username, loginRequest.Password)
+
 		if err != nil {
-			fmt.Println(err)
+			c.JSON(http.StatusUnauthorized, LoginResponse{Message: "Authentication failed"})
+			return
+		}
+		if user["user_id"] != 0 && user["user_id"] != nil {
+			claims := jwt.MapClaims{
+				"user_id": user["user_id"],
+				"exp":     time.Now().Add(time.Hour * 1).Unix(), // Token will expire in 1 hour
+				"nbf":     time.Now().Unix(),
+				"iat":     time.Now().Unix(),
+			}
+			token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+			// Sign the token with your secret key
+			tokenString, err := token.SignedString(secretKey)
+			if err != nil {
+				fmt.Println(err)
+				c.JSON(http.StatusUnauthorized, LoginResponse{Message: "Authentication failed"})
+				return
+			}
+
+			c.JSON(http.StatusOK, LoginResponse{
+				Message: "Login successful",
+				Token:   tokenString,
+			})
+		} else {
+			c.JSON(http.StatusUnauthorized, LoginResponse{Message: "Incorcet Username or Password."})
+			return
+		}
+	case "mongo":
+		// Authenticate user
+		user, err := mongooDbModel.AuthenticateUser(loginRequest.Username, loginRequest.Password)
+
+		if err != nil {
 			c.JSON(http.StatusUnauthorized, LoginResponse{Message: "Authentication failed"})
 			return
 		}
 
-		c.JSON(http.StatusOK, LoginResponse{
-			Message: "Login successful",
-			Token:   tokenString,
-		})
-	} else {
-		c.JSON(http.StatusUnauthorized, LoginResponse{Message: "Incorcet Username or Password."})
-		return
+		if user != nil {
+			claims := jwt.MapClaims{
+				"user_id": user["_id"],
+				"exp":     time.Now().Add(time.Hour * 1).Unix(), // Token will expire in 1 hour
+				"nbf":     time.Now().Unix(),
+				"iat":     time.Now().Unix(),
+			}
+			token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+			// Sign the token with your secret key
+			tokenString, err := token.SignedString(secretKey)
+			if err != nil {
+				fmt.Println(err)
+				c.JSON(http.StatusUnauthorized, LoginResponse{Message: "Authentication failed"})
+				return
+			}
+
+			c.JSON(http.StatusOK, LoginResponse{
+				Message: "Login successful",
+				Token:   tokenString,
+			})
+		} else {
+			c.JSON(http.StatusUnauthorized, LoginResponse{Message: "Incorrect Username or Password."})
+			return
+		}
+
 	}
 
 }
@@ -73,12 +113,11 @@ func GetAllRoutes(c *gin.Context) {
 		"data":  config.Routes,
 	})
 }
-
 func AddRouteHandler(c *gin.Context) {
 
 	var newRoute utils.Route
 	if err := c.ShouldBindJSON(&newRoute); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": "Invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": err.Error()})
 		return
 	}
 
@@ -89,4 +128,32 @@ func AddRouteHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"error": false, "message": "New route added successfully"})
+}
+
+func UpdateRouteHandler(c *gin.Context) {
+	var updatedRoute utils.Route
+	if err := c.ShouldBindJSON(&updatedRoute); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": err.Error()})
+		return
+	}
+
+	err := utils.UpdateRoute(updatedRoute)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"error": false, "message": "Route updated successfully"})
+}
+
+func DeleteRouteHandler(c *gin.Context) {
+	endpoint := c.Param("endpoint")
+
+	err := utils.DeleteRoute(endpoint)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"error": false, "message": "Route deleted successfully"})
 }

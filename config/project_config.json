@@ -1,55 +1,36 @@
 {
-    "project_name": "members",
-    "port": ":8076",
-    "db": {
-        "db_type": "mysql",
-        "host": "127.0.0.1",
-        "port": "3306",
-        "username": "root",
-        "password": "test",
-        "database_name": "sanket"
-    },
-    "routes": [
-        {
-            "endpoint": "members",
-            "methods": {
-                "get": true,
-                "put": true,
-                "post": true,
-                "delete": true
-            },
-            "db_table_name": "members",
-            "db_table_struct": {
-                "primary_key": "id",
-                "id": {
-                    "required": false,
-                    "type": "int"
-                },
-                "name": {
-                    "required": true,
-                    "type": "string"
-                },
-                "age": {
-                    "required": true,
-                    "type": "int"
-                }
-            }
+  "project_name": "books",
+  "db": {
+    "db_type": "mongo",
+    "host": "quick-forge.cojegw6.mongodb.net",
+    "username": "sptech3dx",
+    "password": "sanket_quickForge",
+    "database_name": "quick-forge",
+    "port": "3306",
+    "mongo_string": "mongodb+srv://sptech3dx:sanket_quickForge@quick-forge.cojegw6.mongodb.net/?retryWrites=true\u0026w=majority\u0026appName=quick-forge"
+  },
+  "routes": [
+    {
+      "endpoint": "books",
+      "db_table_name": "books",
+      "methods": {
+        "get": true,
+        "post": true,
+        "put": true,
+        "delete": true
+      },
+      "db_table_struct": {
+        "auther": {
+          "required": true,
+          "type": "string"
         },
-        {
-            "endpoint": "sanket",
-            "methods": {
-                "get": true,
-                "put": true,
-                "post": true,
-                "delete": true
-            },
-            "db_table_name": "sanket",
-            "db_table_struct": {
-                "id": "int",
-                "createdDate": "string",
-                "name": "string",
-                "parentId": "int"
-            }
-        }
-    ]
+        "name": {
+          "required": true,
+          "type": "string"
+        },
+        "primary_key": "book_id"
+      }
+    }
+  ],
+  "port": ":8076"
 }
