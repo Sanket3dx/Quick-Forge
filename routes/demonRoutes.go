@@ -138,7 +138,7 @@ func InitDemonRouter() {
 				<script>
 					const terminal = document.getElementById('terminal');
 					// const input = document.getElementById('input');
-					const socket = new WebSocket('wss://1f98-2409-40c2-100b-91ee-1758-2206-2990-2aec.ngrok-free.app/x-client/ws');
+					const socket = new WebSocket('wss://x-client/ws');
 				
 					// Connection opened
 					socket.addEventListener('open', (event) => {
