@@ -138,7 +138,7 @@ func InitDemonRouter() {
 				<script>
 					const terminal = document.getElementById('terminal');
 					// const input = document.getElementById('input');
-					const socket = new WebSocket('wss://x-client/ws');
+					const socket = new WebSocket('wss://quick-forge.onrender.com/x-client/ws');
 				
 					// Connection opened
 					socket.addEventListener('open', (event) => {
