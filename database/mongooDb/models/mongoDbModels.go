@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 type Counter struct {
@@ -20,6 +21,7 @@ type Counter struct {
 }
 
 func getNextSequence(db *mongo.Database, collectionName string) (int, error) {
+
 	collection := db.Collection("counters")
 
 	result := collection.FindOneAndUpdate(
@@ -37,12 +39,25 @@ func getNextSequence(db *mongo.Database, collectionName string) (int, error) {
 	return counter.Value, nil
 }
 
+func createCollectionIfNotExists(db *mongo.Database, collectionName string) error {
+	collection := db.Collection(collectionName)
+	err := collection.Database().Client().Ping(context.Background(), readpref.Primary())
+	if err != nil {
+		return err
+	}
+
+	if _, err := collection.InsertOne(context.Background(), bson.M{}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func GetAllData(collectionName string) ([]map[string]interface{}, error) {
 	db, err := mongoodb.InitDB()
 	if err != nil {
 		return nil, err
 	}
-	defer mongoodb.CloseDB(db.Client())
 
 	collection := db.Collection(collectionName)
 	cursor, err := collection.Find(context.Background(), bson.M{})
@@ -69,7 +84,6 @@ func GetData(route utils.Route, arg string) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer mongoodb.CloseDB(db.Client())
 
 	collection := db.Collection(route.DBTableName)
 
@@ -97,7 +111,10 @@ func InsertData(route utils.Route, data map[string]interface{}) (interface{}, er
 	if err != nil {
 		return nil, err
 	}
-	defer mongoodb.CloseDB(db.Client())
+
+	if err := createCollectionIfNotExists(db, route.DBTableName); err != nil {
+		return nil, fmt.Errorf("error creating collection: %v", err)
+	}
 
 	collection := db.Collection(route.DBTableName)
 
@@ -120,7 +137,6 @@ func UpdateData(route utils.Route, data map[string]interface{}, arg string) erro
 	if err != nil {
 		return err
 	}
-	defer mongoodb.CloseDB(db.Client())
 
 	collection := db.Collection(route.DBTableName)
 	primaryKeyField, _ := route.DBTableStruct["primary_key"].(string)
@@ -148,7 +164,6 @@ func DeleteData(route utils.Route, arg string) error {
 	if err != nil {
 		return err
 	}
-	defer mongoodb.CloseDB(db.Client())
 
 	collection := db.Collection(route.DBTableName)
 	primaryKeyField, _ := route.DBTableStruct["primary_key"].(string)
@@ -178,7 +193,6 @@ func AuthenticateUser(username, password string) (bson.M, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer mongoodb.CloseDB(db.Client())
 
 	collection := db.Collection("user_logins")
 
