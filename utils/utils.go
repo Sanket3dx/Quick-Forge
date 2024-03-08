@@ -34,15 +34,21 @@ type Route struct {
 	DBTableName   string                 `json:"db_table_name" binding:"required"`
 	Methods       RouteMethod            `json:"methods" binding:"required"`
 	DBTableStruct map[string]interface{} `json:"db_table_struct" binding:"required"`
+	Secure        bool                   `json:"secure" binding:"required"`
 }
 
 type ProjectConfig struct {
 	ProjectName string   `json:"project_name"`
 	DB          Database `json:"db"`
 	Routes      []Route  `json:"routes"`
+	Auth        Auth     `json:"auth"`
 	Port        string   `json:"port"`
 }
 
+type Auth struct {
+	Secure    bool   `json:"secure"`
+	SecretKey string `json:"secret_key"`
+}
 type WebSocketMessage struct {
 	Message string `json:"message"`
 }
