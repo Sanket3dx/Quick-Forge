@@ -140,6 +140,18 @@ func UpdateRoute(updatedRoute Route) error {
 	return nil
 }
 
+func GetRouteByEndpoint(endpoint string) (Route, error) {
+	config := GetProjectConfig()
+
+	// Find the route with the specified endpoint
+	for _, route := range config.Routes {
+		if route.Endpoint == endpoint {
+			return route, nil
+		}
+	}
+
+	return Route{}, fmt.Errorf("Route '%s' not found", endpoint)
+}
 func DeleteRoute(endpoint string) error {
 	config := GetProjectConfig()
 	var indexToDelete int = -1

@@ -64,6 +64,7 @@ func InitDemonRouter() {
 	{
 		clientRouter.POST("/login", clientcontroller.LoginHandler)
 		clientRouter.GET("/routes", middlewares.AuthMiddleware(), clientcontroller.GetAllRoutes)
+		clientRouter.GET("/routes/:endpoint", middlewares.AuthMiddleware(), clientcontroller.GetRoute)
 		clientRouter.POST("/routes", middlewares.AuthMiddleware(), clientcontroller.AddRouteHandler)
 		clientRouter.PUT("/routes", middlewares.AuthMiddleware(), clientcontroller.UpdateRouteHandler)
 		clientRouter.DELETE("/routes/:endpoint", middlewares.AuthMiddleware(), clientcontroller.DeleteRouteHandler)

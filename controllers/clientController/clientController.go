@@ -113,6 +113,19 @@ func GetAllRoutes(c *gin.Context) {
 		"data":  config.Routes,
 	})
 }
+
+func GetRoute(c *gin.Context) {
+	endpoint := c.Param("endpoint")
+
+	route, err := utils.GetRouteByEndpoint(endpoint)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"error": false, "data": route})
+}
+
 func AddRouteHandler(c *gin.Context) {
 
 	var newRoute utils.Route
