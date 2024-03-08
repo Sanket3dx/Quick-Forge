@@ -158,7 +158,7 @@ func AuthDemonMiddleware() gin.HandlerFunc {
 			return
 		}
 		route, _ := routeConfig.(utils.Route)
-		if authConfig.Secure && route.Secure {
+		if authConfig.Secure && route.IsSecure {
 			secretKey := []byte(authConfig.SecretKey)
 			authHeader := c.GetHeader("Authorization")
 
