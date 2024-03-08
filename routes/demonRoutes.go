@@ -53,6 +53,7 @@ func InitDemonRouter() {
 	demonRouter := router.Group("/" + projectName)
 	{
 		demonRouter.Use(middlewares.MethodAllowedMiddleware())
+		demonRouter.Use(middlewares.AuthDemonMiddleware())
 		demonRouter.GET("/:endpoint", demonController.GetAllhandler)
 		demonRouter.GET("/:endpoint/:arg", demonController.Gethandler)
 		demonRouter.POST("/:endpoint", middlewares.ValidateRequest(), demonController.Posthandler)

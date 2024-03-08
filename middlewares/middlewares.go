@@ -55,6 +55,7 @@ func MethodAllowedMiddleware() gin.HandlerFunc {
 		}
 		if endpointAllowed {
 			c.Set("routeInfo", routeInfo)
+			c.Set("auth", config.Auth)
 			c.Set("dbType", config.DB.DBType)
 			c.Next()
 		} else {
@@ -140,5 +141,63 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Next()
+	}
+}
+
+func AuthDemonMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		auth, exists := c.Get("auth")
+		if !exists {
+			utils.HandleError(c, http.StatusBadRequest, "auth info not found in context")
+			return
+		}
+		authConfig, _ := auth.(utils.Auth)
+		routeConfig, exists := c.Get("routeInfo")
+		if !exists {
+			utils.HandleError(c, http.StatusBadRequest, "Route info not found in context")
+			return
+		}
+		route, _ := routeConfig.(utils.Route)
+		if authConfig.Secure && route.Secure {
+			secretKey := []byte(authConfig.SecretKey)
+			authHeader := c.GetHeader("Authorization")
+
+			if authHeader == "" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is missing"})
+				c.Abort()
+				return
+
+			}
+
+			authHeaderParts := strings.Split(authHeader, " ")
+			if len(authHeaderParts) != 2 || authHeaderParts[0] != "Bearer" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid Bearer token"})
+				c.Abort()
+				return
+			}
+
+			tokenString := authHeaderParts[1]
+
+			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+				return []byte(secretKey), nil
+			})
+
+			if err != nil || !token.Valid {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+				c.Abort()
+				return
+			}
+
+			_, ok := token.Claims.(jwt.MapClaims)
+			if !ok {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+				c.Abort()
+				return
+			}
+
+			c.Next()
+		} else {
+			c.Next()
+		}
 	}
 }

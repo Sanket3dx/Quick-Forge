@@ -9,9 +9,14 @@
     "port": "3306",
     "mongo_string": "mongodb+srv://sptech3dx:sanket_quickForge@quick-forge.cojegw6.mongodb.net/?retryWrites=true\u0026w=majority\u0026appName=quick-forge"
   },
+  "auth": {
+    "secure": true,
+    "secret_key": "hdhrtrvsjh2753tydger894683fdbepi747rbwkei47wnnle83ehfbkwo7elwuor73idbflwi"
+  },
   "routes": [
     {
       "endpoint": "books",
+      "secure": true,
       "db_table_name": "books",
       "methods": {
         "get": true,
