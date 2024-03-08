@@ -34,7 +34,7 @@ type Route struct {
 	DBTableName   string                 `json:"db_table_name" binding:"required"`
 	Methods       RouteMethod            `json:"methods" binding:"required"`
 	DBTableStruct map[string]interface{} `json:"db_table_struct" binding:"required"`
-	IsSecure      bool                   `json:"is_secure" binding:"required"`
+	IsSecure      bool                   `json:"is_secure"`
 }
 
 type ProjectConfig struct {

@@ -16,7 +16,7 @@
   "routes": [
     {
       "endpoint": "books",
-      "secure": true,
+      "is_secure": true,
       "db_table_name": "books",
       "methods": {
         "get": true,
