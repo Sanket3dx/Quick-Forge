@@ -38,8 +38,7 @@
             "primary_key": "book_id"
           }
         }
-      ],
-      "port": ":8076"
+      ]
     },
     {
       "project_name": "Test",
@@ -79,8 +78,7 @@
             "primary_key": "book_id"
           }
         }
-      ],
-      "port": ":8076"
+      ]
     }
   ]
 }

@@ -22,7 +22,6 @@ type Database struct {
 	Username     string `json:"username"`
 	Password     string `json:"password"`
 	DatabaseName string `json:"database_name"`
-	Port         string `json:"port"`
 	MongoString  string `json:"mongo_string"`
 }
 
