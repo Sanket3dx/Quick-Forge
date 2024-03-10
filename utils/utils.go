@@ -175,22 +175,22 @@ func (p *Projects) DeleteRoute(projectName, endpoint string) error {
 	return nil
 }
 
-func IsEndpointAllowed(config *ProjectConfig, endpoint string, method string) bool {
+func IsEndpointAllowed(config *ProjectConfig, endpoint string, method string) (bool, Route) {
 	for _, route := range config.Routes {
 		if route.Endpoint == endpoint {
 			switch strings.ToUpper(method) {
 			case "GET":
-				return route.Methods.Get
+				return true, route
 			case "POST":
-				return route.Methods.Post
+				return true, route
 			case "PUT":
-				return route.Methods.Put
+				return true, route
 			case "DELETE":
-				return route.Methods.Delete
+				return true, route
 			}
 		}
 	}
-	return false
+	return false, Route{}
 }
 
 func HandleError(ctx *gin.Context, statusCode int, errorMessage string) {

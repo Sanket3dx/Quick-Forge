@@ -59,7 +59,6 @@ func GetAllData(dbConfig utils.Database, collectionName string, filters []map[st
 		return nil, err
 	}
 	collection := db.Collection(collectionName)
-	fmt.Println(collection)
 	// Construct the filter based on the provided filters
 	filter := bson.M{}
 	for _, f := range filters {
@@ -204,7 +203,6 @@ func DeleteData(dbConfig utils.Database, route utils.Route, arg string) error {
 	filter := bson.M{primaryKeyField: argInt}
 	result, err := collection.DeleteMany(context.Background(), filter)
 
-	fmt.Println(result)
 	if err != nil {
 		fmt.Println("Error deleting document:", err)
 		return err

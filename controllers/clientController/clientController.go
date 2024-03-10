@@ -35,7 +35,7 @@ func LoginHandler(c *gin.Context) {
 
 	dbType := os.Getenv("DB_TYPE")
 	secretKey := []byte("kaHFVKAJHFVKAJHFOIWGYFOIAUSFOAKSbe8127467824678fsd78gtasd68trgasdrgsrds7df8")
-
+	fmt.Println(dbType)
 	switch dbType {
 
 	case "mysql":
@@ -75,7 +75,7 @@ func LoginHandler(c *gin.Context) {
 		user, err := mongooDbModel.AuthenticateUser(loginRequest.Username, loginRequest.Password)
 
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, LoginResponse{Message: "Authentication failed"})
+			c.JSON(http.StatusUnauthorized, LoginResponse{Message: err.Error()})
 			return
 		}
 

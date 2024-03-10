@@ -22,7 +22,6 @@ func InitDB(DbConfig utils.Database) (*mongo.Database, error) {
 	clientOnce.Do(func() {
 
 		uri := DbConfig.MongoString
-		fmt.Println(uri)
 		clientOptions := options.Client().ApplyURI(uri)
 
 		clientOptions.SetMinPoolSize(5)                    // Minimum number of connections in the pool
@@ -44,7 +43,7 @@ func InitDB(DbConfig utils.Database) (*mongo.Database, error) {
 		mongoClient = client
 		fmt.Println("Connected to MongoDB!")
 	})
-	fmt.Println(DbConfig.DatabaseName)
+
 	return mongoClient.Database(DbConfig.DatabaseName), nil
 }
 

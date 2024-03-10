@@ -33,10 +33,9 @@ func MethodAllowedMiddleware() gin.HandlerFunc {
 		// Get the request method
 		requestMethod := c.Request.Method
 		requestedEndpoint := c.Param("endpoint")
-		var routeInfo utils.Route
-		endpointAllowed := utils.IsEndpointAllowed(&config, requestedEndpoint, requestMethod)
+		endpointAllowed, route := utils.IsEndpointAllowed(&config, requestedEndpoint, requestMethod)
 		if endpointAllowed {
-			c.Set("routeInfo", routeInfo)
+			c.Set("routeInfo", route)
 			c.Set("auth", config.Auth)
 			c.Set("dbConfig", config.DB)
 			c.Set("projectName", projectName)
@@ -44,7 +43,7 @@ func MethodAllowedMiddleware() gin.HandlerFunc {
 		} else {
 			c.JSON(http.StatusMethodNotAllowed, gin.H{
 				"error":   "Method Not Allowed",
-				"message": requestedEndpoint + " is not defined in project",
+				"message": requestedEndpoint + " with " + requestMethod + " Method is not defined in project",
 			})
 			c.Abort()
 		}
@@ -73,7 +72,6 @@ func ValidateRequest() gin.HandlerFunc {
 			utils.HandleError(c, http.StatusBadRequest, "Invalid request body")
 			return
 		}
-
 		// Check if the POST request body contains the required parameters
 		for paramName, paramConfig := range route.DBTableStruct {
 			if paramConfigMap, ok := paramConfig.(map[string]interface{}); ok {
@@ -97,9 +95,16 @@ func AuthMiddleware() gin.HandlerFunc {
 		secretKey := []byte("kaHFVKAJHFVKAJHFOIWGYFOIAUSFOAKSbe8127467824678fsd78gtasd68trgasdrgsrds7df8")
 
 		authHeader := c.GetHeader("Authorization")
+		projectName := c.GetHeader("x-project-name")
 
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is missing"})
+			c.Abort()
+			return
+
+		}
+		if projectName == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "x-project-name header is missing"})
 			c.Abort()
 			return
 
@@ -130,7 +135,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		projectName := c.GetHeader("x-project-name")
 		c.Set("projectName", projectName)
 
 		c.Next()
