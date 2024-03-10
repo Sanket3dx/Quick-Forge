@@ -229,3 +229,21 @@ func GetProjectNameFormGinContext(ctx *gin.Context) string {
 	}
 	return projectName
 }
+
+func (p *Projects) UpdateProject(name string, updatedProject ProjectConfig) {
+	for i := range p.Project {
+		if p.Project[i].ProjectName == name {
+			p.Project[i] = updatedProject
+			break
+		}
+	}
+}
+
+func (p *Projects) DeleteProject(name string) {
+	for i, project := range p.Project {
+		if project.ProjectName == name {
+			p.Project = append(p.Project[:i], p.Project[i+1:]...)
+			break
+		}
+	}
+}
