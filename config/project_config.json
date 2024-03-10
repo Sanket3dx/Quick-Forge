@@ -1,41 +1,86 @@
 {
-  "project_name": "books",
-  "db": {
-    "db_type": "mongo",
-    "host": "quick-forge.cojegw6.mongodb.net",
-    "username": "sptech3dx",
-    "password": "sanket_quickForge",
-    "database_name": "quick-forge",
-    "port": "3306",
-    "mongo_string": "mongodb+srv://sptech3dx:sanket_quickForge@quick-forge.cojegw6.mongodb.net/?retryWrites=true\u0026w=majority\u0026appName=quick-forge"
-  },
-  "auth": {
-    "secure": true,
-    "secret_key": "hdhrtrvsjh2753tydger894683fdbepi747rbwkei47wnnle83ehfbkwo7elwuor73idbflwi"
-  },
-  "routes": [
+  "project": [
     {
-      "endpoint": "books",
-      "is_secure": true,
-      "db_table_name": "books",
-      "methods": {
-        "get": true,
-        "post": true,
-        "put": true,
-        "delete": true
+      "project_name": "books",
+      "db": {
+        "db_type": "mongo",
+        "host": "quick-forge.cojegw6.mongodb.net",
+        "username": "sptech3dx",
+        "password": "sanket_quickForge",
+        "database_name": "quick-forge",
+        "port": "3306",
+        "mongo_string": "mongodb+srv://sptech3dx:sanket_quickForge@quick-forge.cojegw6.mongodb.net/?retryWrites=true\u0026w=majority\u0026appName=quick-forge"
       },
-      "db_table_struct": {
-        "auther": {
-          "required": true,
-          "type": "string"
-        },
-        "name": {
-          "required": true,
-          "type": "string"
-        },
-        "primary_key": "book_id"
-      }
+      "auth": {
+        "secure": true,
+        "secret_key": "hdhrtrvsjh2753tydger894683fdbepi747rbwkei47wnnle83ehfbkwo7elwuor73idbflwi"
+      },
+      "routes": [
+        {
+          "endpoint": "books",
+          "is_secure": true,
+          "db_table_name": "books",
+          "methods": {
+            "get": true,
+            "post": true,
+            "put": true,
+            "delete": true
+          },
+          "db_table_struct": {
+            "auther": {
+              "required": true,
+              "type": "string"
+            },
+            "name": {
+              "required": true,
+              "type": "string"
+            },
+            "primary_key": "book_id"
+          }
+        }
+      ],
+      "port": ":8076"
+    },
+    {
+      "project_name": "Test",
+      "db": {
+        "db_type": "mongo",
+        "host": "quick-forge.cojegw6.mongodb.net",
+        "username": "sptech3dx",
+        "password": "sanket_quickForge",
+        "database_name": "quick-forge",
+        "port": "3306",
+        "mongo_string": "mongodb+srv://sptech3dx:sanket_quickForge@quick-forge.cojegw6.mongodb.net/?retryWrites=true\u0026w=majority\u0026appName=quick-forge"
+      },
+      "auth": {
+        "secure": true,
+        "secret_key": "hdhrtrvsjh2753tydger894683fdbepi747rbwkei47wnnle83ehfbkwo7elwuor73idbflwi"
+      },
+      "routes": [
+        {
+          "endpoint": "books",
+          "is_secure": true,
+          "db_table_name": "books",
+          "methods": {
+            "get": true,
+            "post": true,
+            "put": true,
+            "delete": true
+          },
+          "db_table_struct": {
+            "auther": {
+              "required": true,
+              "type": "string"
+            },
+            "name": {
+              "required": true,
+              "type": "string"
+            },
+            "primary_key": "book_id"
+          }
+        }
+      ],
+      "port": ":8076"
     }
-  ],
-  "port": ":8076"
+  ]
 }

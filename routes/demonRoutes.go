@@ -3,9 +3,10 @@ package demonRoutes
 import (
 	"fmt"
 	"net/http"
+	"os"
 	clientcontroller "quick_forge/controllers/clientController"
 	"quick_forge/controllers/demonController"
-	mysql_configer "quick_forge/database/mysql"
+
 	"quick_forge/middlewares"
 	"quick_forge/utils"
 	"sync"
@@ -30,13 +31,6 @@ var clientsMutex sync.Mutex
 var broadcast = make(chan utils.WebSocketMessage) // channel to broadcast messages to all clients
 
 func InitDemonRouter() {
-	config := utils.GetProjectConfig()
-	projectName := config.ProjectName
-	if config.DB.DBType == "mysql" {
-		for _, val := range config.Routes {
-			mysql_configer.CreateTableIfNotExist(val)
-		}
-	}
 	fmt.Println("👊 Config files are Loaded ...✅ ")
 	router := gin.Default()
 
@@ -50,15 +44,15 @@ func InitDemonRouter() {
 	router.Use(middlewares.WebsoketBrodcaster(&broadcast))
 	go handleMessages()
 
-	demonRouter := router.Group("/" + projectName)
+	demonRouter := router.Group("/api")
 	{
 		demonRouter.Use(middlewares.MethodAllowedMiddleware())
 		demonRouter.Use(middlewares.AuthDemonMiddleware())
-		demonRouter.GET("/:endpoint", demonController.GetAllhandler)
-		demonRouter.GET("/:endpoint/:arg", demonController.Gethandler)
-		demonRouter.POST("/:endpoint", middlewares.ValidateRequest(), demonController.Posthandler)
-		demonRouter.PUT("/:endpoint/:arg", middlewares.ValidateRequest(), demonController.Puthandler)
-		demonRouter.DELETE("/:endpoint/:arg", demonController.Deletehandler)
+		demonRouter.GET("/:projectName/:endpoint", demonController.GetAllhandler)
+		demonRouter.GET("/:projectName/:endpoint/:arg", demonController.Gethandler)
+		demonRouter.POST("/:projectName/:endpoint", middlewares.ValidateRequest(), demonController.Posthandler)
+		demonRouter.PUT("/:projectName/:endpoint/:arg", middlewares.ValidateRequest(), demonController.Puthandler)
+		demonRouter.DELETE("/:projectName/:endpoint/:arg", demonController.Deletehandler)
 	}
 	clientRouter := router.Group("/x-client")
 	{
@@ -196,8 +190,8 @@ func InitDemonRouter() {
 	}
 
 	fmt.Println("🤘 Routes Loaded ...✅ ")
-	fmt.Println("😎 Router started on Port : " + config.Port + " ...✅ ")
-	router.Run(config.Port)
+	fmt.Println("😎 Router started on Port : " + os.Getenv("SERVICE_PORT") + " ...✅ ")
+	router.Run(os.Getenv("SERVICE_PORT"))
 }
 
 func handleMessages() {

@@ -11,7 +11,6 @@ import (
 
 func GetAllhandler(ctx *gin.Context) {
 	routeInfo, exists := ctx.Get("routeInfo")
-
 	if !exists {
 		utils.HandleError(ctx, http.StatusInternalServerError, "Route info not found in context")
 		return
@@ -21,25 +20,31 @@ func GetAllhandler(ctx *gin.Context) {
 		utils.HandleError(ctx, http.StatusInternalServerError, "Invalid routeInfo type")
 		return
 	}
-	dbType, exists := ctx.Get("dbType")
-
+	dbConfigInfo, exists := ctx.Get("dbConfig")
 	if !exists {
-		utils.HandleError(ctx, http.StatusInternalServerError, "dbType not found in context")
+		utils.HandleError(ctx, http.StatusInternalServerError, "dbConfig not found in context")
 		return
 	}
+	dbConfig, ok := dbConfigInfo.(utils.Database)
+	if !ok {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Invalid dbConfig type")
+		return
+	}
+
 	var allData []map[string]interface{}
 	var err error
-	switch dbType {
+	queryParms := utils.ConvertURLValuesToMapSlice(ctx.Request.URL.Query())
+	switch dbConfig.DBType {
 	case "mysql":
-		allData, err = mysql_models.GetAllData(route.DBTableName)
+		allData, err = mysql_models.GetAllData(dbConfig, route.DBTableName, queryParms)
 		if err != nil {
 			utils.HandleError(ctx, http.StatusInternalServerError, "error fetching data from DB")
 			return
 		}
 	case "mongo":
-		allData, err = mongooDbModel.GetAllData(route.DBTableName)
+		allData, err = mongooDbModel.GetAllData(dbConfig, route.DBTableName, queryParms)
 		if err != nil {
-			utils.HandleError(ctx, http.StatusInternalServerError, "error fetching data from DB")
+			utils.HandleError(ctx, http.StatusInternalServerError, err.Error())
 			return
 		}
 	}
@@ -64,20 +69,25 @@ func Gethandler(ctx *gin.Context) {
 		return
 	}
 
-	dbType, exists := ctx.Get("dbType")
+	dbConfigInfo, exists := ctx.Get("dbConfig")
 	if !exists {
-		utils.HandleError(ctx, http.StatusInternalServerError, "dbType not found in context")
+		utils.HandleError(ctx, http.StatusInternalServerError, "dbConfig not found in context")
+		return
+	}
+	dbConfig, ok := dbConfigInfo.(utils.Database)
+	if !ok {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Invalid dbConfig type")
 		return
 	}
 
 	var data map[string]interface{}
 	var err error
 
-	switch dbType {
+	switch dbConfig.DBType {
 	case "mysql":
-		data, err = mysql_models.GetData(route, ctx.Param("arg"))
+		data, err = mysql_models.GetData(dbConfig, route, ctx.Param("arg"))
 	case "mongo":
-		data, err = mongooDbModel.GetData(route, ctx.Param("arg"))
+		data, err = mongooDbModel.GetData(dbConfig, route, ctx.Param("arg"))
 	default:
 		utils.HandleError(ctx, http.StatusInternalServerError, "Unsupported database type")
 		return
@@ -108,9 +118,14 @@ func Posthandler(ctx *gin.Context) {
 		return
 	}
 
-	dbType, exists := ctx.Get("dbType")
+	dbConfigInfo, exists := ctx.Get("dbConfig")
 	if !exists {
-		utils.HandleError(ctx, http.StatusInternalServerError, "dbType not found in context")
+		utils.HandleError(ctx, http.StatusInternalServerError, "dbConfig not found in context")
+		return
+	}
+	dbConfig, ok := dbConfigInfo.(utils.Database)
+	if !ok {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Invalid dbConfig type")
 		return
 	}
 
@@ -130,11 +145,11 @@ func Posthandler(ctx *gin.Context) {
 	var insertedID interface{}
 	var err error
 
-	switch dbType {
+	switch dbConfig.DBType {
 	case "mysql":
-		insertedID, err = mysql_models.InsertData(route.DBTableName, data)
+		insertedID, err = mysql_models.InsertData(dbConfig, route.DBTableName, data)
 	case "mongo":
-		insertedID, err = mongooDbModel.InsertData(route, data)
+		insertedID, err = mongooDbModel.InsertData(dbConfig, route, data)
 	default:
 		utils.HandleError(ctx, http.StatusInternalServerError, "Unsupported database type")
 		return
@@ -164,9 +179,14 @@ func Puthandler(ctx *gin.Context) {
 		return
 	}
 
-	dbType, exists := ctx.Get("dbType")
+	dbConfigInfo, exists := ctx.Get("dbConfig")
 	if !exists {
-		utils.HandleError(ctx, http.StatusInternalServerError, "dbType not found in context")
+		utils.HandleError(ctx, http.StatusInternalServerError, "dbConfig not found in context")
+		return
+	}
+	dbConfig, ok := dbConfigInfo.(utils.Database)
+	if !ok {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Invalid dbConfig type")
 		return
 	}
 
@@ -184,11 +204,11 @@ func Puthandler(ctx *gin.Context) {
 
 	var err error
 
-	switch dbType {
+	switch dbConfig.DBType {
 	case "mysql":
-		err = mysql_models.UpdateData(route, data, ctx.Param("arg"))
+		err = mysql_models.UpdateData(dbConfig, route, data, ctx.Param("arg"))
 	case "mongo":
-		err = mongooDbModel.UpdateData(route, data, ctx.Param("arg"))
+		err = mongooDbModel.UpdateData(dbConfig, route, data, ctx.Param("arg"))
 	default:
 		utils.HandleError(ctx, http.StatusInternalServerError, "Unsupported database type")
 		return
@@ -218,19 +238,24 @@ func Deletehandler(ctx *gin.Context) {
 		return
 	}
 
-	dbType, exists := ctx.Get("dbType")
+	dbConfigInfo, exists := ctx.Get("dbConfig")
 	if !exists {
-		utils.HandleError(ctx, http.StatusInternalServerError, "dbType not found in context")
+		utils.HandleError(ctx, http.StatusInternalServerError, "dbConfig not found in context")
+		return
+	}
+	dbConfig, ok := dbConfigInfo.(utils.Database)
+	if !ok {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Invalid dbConfig type")
 		return
 	}
 
 	var err error
 
-	switch dbType {
+	switch dbConfig.DBType {
 	case "mysql":
-		err = mysql_models.DeleteData(route, ctx.Param("arg"))
+		err = mysql_models.DeleteData(dbConfig, route, ctx.Param("arg"))
 	case "mongo":
-		err = mongooDbModel.DeleteData(route, ctx.Param("arg"))
+		err = mongooDbModel.DeleteData(dbConfig, route, ctx.Param("arg"))
 	default:
 		utils.HandleError(ctx, http.StatusInternalServerError, "Unsupported database type")
 		return

@@ -4,13 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
+	"net/http"
+	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
+
+type Projects struct {
+	Project []ProjectConfig
+}
 
 type Database struct {
 	DBType       string `json:"db_type"`
@@ -23,10 +27,10 @@ type Database struct {
 }
 
 type RouteMethod struct {
-	Get    *bool `json:"get"`
-	Post   *bool `json:"post"`
-	Put    *bool `json:"put"`
-	Delete *bool `json:"delete"`
+	Get    bool `json:"get"`
+	Post   bool `json:"post"`
+	Put    bool `json:"put"`
+	Delete bool `json:"delete"`
 }
 
 type Route struct {
@@ -49,148 +53,144 @@ type Auth struct {
 	Secure    bool   `json:"secure"`
 	SecretKey string `json:"secret_key"`
 }
+
 type WebSocketMessage struct {
 	Message string `json:"message"`
 }
 
-func GetProjectConfig() ProjectConfig {
-	var config ProjectConfig
-	mydir, _ := os.Getwd()
-	filePath := filepath.Join(mydir, "/config", "project_config.json")
+// Correct GetAllProjectConfig function to return pointer to Projects
+func (p *Projects) LoadFromJSON(filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
-		log.Fatalf("Error opening JSON file: %v", err)
+		return fmt.Errorf("error opening JSON file: %v", err)
 	}
 	defer file.Close()
 
-	data, err := ioutil.ReadAll(file) // Read the entire file content
+	data, err := ioutil.ReadAll(file)
 	if err != nil {
-		log.Fatalf("Error reading JSON file: %v", err)
+		return fmt.Errorf("error reading JSON file: %v", err)
 	}
-
-	err = json.Unmarshal(data, &config)
-	if err != nil {
-		log.Fatalf("Error parsing JSON: %v", err)
+	if err := json.Unmarshal(data, p); err != nil {
+		return fmt.Errorf("error parsing JSON: %v", err)
 	}
-	fmt.Println(config.DB)
-	return config
-}
-
-func IsEndpointAllowed(config ProjectConfig, endpoint string, method string) bool {
-	for _, route := range config.Routes {
-		if route.Endpoint == endpoint {
-			switch strings.ToUpper(method) {
-			case "GET":
-				return route.Methods.Get != nil && *route.Methods.Get
-			case "POST":
-				return route.Methods.Post != nil && *route.Methods.Post
-			case "PUT":
-				return route.Methods.Put != nil && *route.Methods.Put
-			case "DELETE":
-				return route.Methods.Delete != nil && *route.Methods.Delete
-			}
-		}
-	}
-	return false
-}
-
-func AddRoute(newRoute Route) error {
-	config := GetProjectConfig()
-
-	for _, route := range config.Routes {
-		if route.Endpoint == newRoute.Endpoint {
-			return fmt.Errorf("Endpoint '%s' already exists", newRoute.Endpoint)
-		}
-	}
-
-	config.Routes = append(config.Routes, newRoute)
-
-	err := saveProjectConfig(config)
-	if err != nil {
-		return fmt.Errorf("Error saving project configuration: %v", err)
-	}
-
 	return nil
 }
 
-func UpdateRoute(updatedRoute Route) error {
-	config := GetProjectConfig()
-
-	// Find the index of the route to update
-	var indexToUpdate int = -1
-	for i, route := range config.Routes {
-		if route.Endpoint == updatedRoute.Endpoint {
-			indexToUpdate = i
-			break
-		}
-	}
-
-	if indexToUpdate == -1 {
-		return fmt.Errorf("Route '%s' not found", updatedRoute.Endpoint)
-	}
-
-	// Update the route
-	config.Routes[indexToUpdate] = updatedRoute
-
-	err := saveProjectConfig(config)
+func (p *Projects) SaveToJSON(filePath string) error {
+	jsonData, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {
-		return fmt.Errorf("Error saving project configuration: %v", err)
+		return fmt.Errorf("error encoding JSON: %v", err)
 	}
 
-	return nil
-}
-
-func GetRouteByEndpoint(endpoint string) (Route, error) {
-	config := GetProjectConfig()
-
-	// Find the route with the specified endpoint
-	for _, route := range config.Routes {
-		if route.Endpoint == endpoint {
-			return route, nil
-		}
-	}
-
-	return Route{}, fmt.Errorf("Route '%s' not found", endpoint)
-}
-func DeleteRoute(endpoint string) error {
-	config := GetProjectConfig()
-	var indexToDelete int = -1
-	for i, route := range config.Routes {
-		if route.Endpoint == endpoint {
-			indexToDelete = i
-			break
-		}
-	}
-	if indexToDelete == -1 {
-		return fmt.Errorf("Route '%s' not found", endpoint)
-	}
-	config.Routes = append(config.Routes[:indexToDelete], config.Routes[indexToDelete+1:]...)
-
-	// Save the updated configuration
-	err := saveProjectConfig(config)
-	if err != nil {
-		return fmt.Errorf("Error saving project configuration: %v", err)
-	}
-
-	return nil
-}
-
-func saveProjectConfig(config ProjectConfig) error {
-	mydir, _ := os.Getwd()
-	filePath := filepath.Join(mydir, "/config", "project_config.json")
-
-	jsonData, err := json.MarshalIndent(config, "", "  ")
-	if err != nil {
-		return fmt.Errorf("Error encoding JSON: %v", err)
-	}
-
-	err = ioutil.WriteFile(filePath, jsonData, 0644)
-	if err != nil {
-		return fmt.Errorf("Error writing to JSON file: %v", err)
+	if err := ioutil.WriteFile(filePath, jsonData, 0644); err != nil {
+		return fmt.Errorf("error writing to JSON file: %v", err)
 	}
 
 	fmt.Println("Project configuration updated and saved.")
 	return nil
+}
+
+func (p *Projects) FindProjectByName(name string) ProjectConfig {
+
+	for i, project := range p.Project {
+		if strings.EqualFold(project.ProjectName, name) {
+			return p.Project[i]
+		}
+	}
+	return ProjectConfig{}
+}
+
+func (p *Projects) AddRoute(projectName string, newRoute Route) error {
+	project := p.FindProjectByName(projectName)
+	if project.ProjectName == "" {
+		return fmt.Errorf("project '%s' not found", projectName)
+	}
+
+	for _, route := range project.Routes {
+		if route.Endpoint == newRoute.Endpoint {
+			return fmt.Errorf("endpoint '%s' already exists", newRoute.Endpoint)
+		}
+	}
+
+	project.Routes = append(project.Routes, newRoute)
+
+	// Save project configuration after adding a route
+	if err := p.SaveToJSON("config/project_config.json"); err != nil {
+		return fmt.Errorf("error saving project configuration: %v", err)
+	}
+
+	return nil
+}
+
+func (p *Projects) UpdateRoute(projectName string, updatedRoute Route) error {
+	project := p.FindProjectByName(projectName)
+	if project.ProjectName == "" {
+		return fmt.Errorf("project '%s' not found", projectName)
+	}
+
+	found := false
+	for i, route := range project.Routes {
+		if route.Endpoint == updatedRoute.Endpoint {
+			project.Routes[i] = updatedRoute
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("route '%s' not found", updatedRoute.Endpoint)
+	}
+
+	// Save project configuration after updating a route
+	if err := p.SaveToJSON("config/project_config.json"); err != nil {
+		return fmt.Errorf("error saving project configuration: %v", err)
+	}
+
+	return nil
+}
+
+func (p *Projects) DeleteRoute(projectName, endpoint string) error {
+	project := p.FindProjectByName(projectName)
+	if project.ProjectName == "" {
+		return fmt.Errorf("project '%s' not found", projectName)
+	}
+	found := false
+	for i, route := range project.Routes {
+		if route.Endpoint == endpoint {
+			project.Routes = append(project.Routes[:i], project.Routes[i+1:]...)
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("route '%s' not found", endpoint)
+	}
+
+	// Save project configuration after deleting a route
+	if err := p.SaveToJSON("config/project_config.json"); err != nil {
+		return fmt.Errorf("error saving project configuration: %v", err)
+	}
+
+	return nil
+}
+
+func IsEndpointAllowed(config *ProjectConfig, endpoint string, method string) bool {
+	for _, route := range config.Routes {
+		if route.Endpoint == endpoint {
+			switch strings.ToUpper(method) {
+			case "GET":
+				return route.Methods.Get
+			case "POST":
+				return route.Methods.Post
+			case "PUT":
+				return route.Methods.Put
+			case "DELETE":
+				return route.Methods.Delete
+			}
+		}
+	}
+	return false
 }
 
 func HandleError(ctx *gin.Context, statusCode int, errorMessage string) {
@@ -198,4 +198,34 @@ func HandleError(ctx *gin.Context, statusCode int, errorMessage string) {
 		"error": errorMessage,
 	})
 	ctx.Abort()
+}
+
+func ConvertURLValuesToMapSlice(queryParams url.Values) []map[string]interface{} {
+	var result []map[string]interface{}
+
+	for key, values := range queryParams {
+		for _, value := range values {
+			param := map[string]interface{}{
+				key: value,
+			}
+			result = append(result, param)
+		}
+	}
+
+	return result
+}
+
+func GetProjectNameFormGinContext(ctx *gin.Context) string {
+	projectNameRaw, exists := ctx.Get("projectName")
+	if !exists {
+		HandleError(ctx, http.StatusInternalServerError, "projectName not found in context")
+		return ""
+	}
+
+	projectName, ok := projectNameRaw.(string)
+	if !ok {
+		HandleError(ctx, http.StatusInternalServerError, "projectName in context is not a string")
+		return ""
+	}
+	return projectName
 }

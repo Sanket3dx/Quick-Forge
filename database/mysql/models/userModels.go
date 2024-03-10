@@ -3,7 +3,7 @@ package mysql_models
 import mysql_configer "quick_forge/database/mysql"
 
 func AuthenticateUser(username, password string) (map[string]interface{}, error) {
-	db := mysql_configer.InitDB()
+	db := mysql_configer.InitDBInternal()
 	defer db.Close()
 
 	query := "SELECT * FROM app_users WHERE username = ? AND password = ?"

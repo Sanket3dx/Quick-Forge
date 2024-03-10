@@ -3,6 +3,7 @@ package mongoodb
 import (
 	"context"
 	"fmt"
+	"os"
 	"quick_forge/utils"
 	"sync"
 	"time"
@@ -17,10 +18,11 @@ var (
 )
 
 // InitDB initializes the MongoDB client and returns the database instance.
-func InitDB() (*mongo.Database, error) {
+func InitDB(DbConfig utils.Database) (*mongo.Database, error) {
 	clientOnce.Do(func() {
-		dbConfig := utils.GetProjectConfig().DB
-		uri := dbConfig.MongoString
+
+		uri := DbConfig.MongoString
+		fmt.Println(uri)
 		clientOptions := options.Client().ApplyURI(uri)
 
 		clientOptions.SetMinPoolSize(5)                    // Minimum number of connections in the pool
@@ -42,8 +44,8 @@ func InitDB() (*mongo.Database, error) {
 		mongoClient = client
 		fmt.Println("Connected to MongoDB!")
 	})
-
-	return mongoClient.Database(utils.GetProjectConfig().DB.DatabaseName), nil
+	fmt.Println(DbConfig.DatabaseName)
+	return mongoClient.Database(DbConfig.DatabaseName), nil
 }
 
 // CloseDB disconnects the MongoDB client.
@@ -58,13 +60,10 @@ func CloseDB() {
 	}
 }
 
-/*
-this functions creates new db conn with mongo each time
+//this functions creates new db conn with mongo each time for internal client
 
-
-func InitDB() (*mongo.Database, error) {
-	dbConfig := utils.GetProjectConfig().DB
-	uri := dbConfig.MongoString
+func InitDBInternal() (*mongo.Database, error) {
+	uri := os.Getenv("MONGO_URI")
 	clientOptions := options.Client().ApplyURI(uri)
 
 	client, err := mongo.Connect(context.Background(), clientOptions)
@@ -78,12 +77,12 @@ func InitDB() (*mongo.Database, error) {
 	}
 	fmt.Println("Connected to MongoDB!")
 
-	db := client.Database(dbConfig.DatabaseName)
+	db := client.Database(os.Getenv("DB_NAME"))
 
 	return db, nil
 }
 
-func CloseDB(client *mongo.Client) {
+func CloseDBInternal(client *mongo.Client) {
 	err := client.Disconnect(context.Background())
 	if err != nil {
 		fmt.Printf("Error disconnecting from MongoDB: %v\n", err)
@@ -91,4 +90,3 @@ func CloseDB(client *mongo.Client) {
 		fmt.Println("Disconnected from MongoDB.")
 	}
 }
-*/

@@ -53,14 +53,43 @@ func createCollectionIfNotExists(db *mongo.Database, collectionName string) erro
 	return nil
 }
 
-func GetAllData(collectionName string) ([]map[string]interface{}, error) {
-	db, err := mongoodb.InitDB()
+func GetAllData(dbConfig utils.Database, collectionName string, filters []map[string]interface{}) ([]map[string]interface{}, error) {
+	db, err := mongoodb.InitDB(dbConfig)
 	if err != nil {
 		return nil, err
 	}
-
 	collection := db.Collection(collectionName)
-	cursor, err := collection.Find(context.Background(), bson.M{})
+	fmt.Println(collection)
+	// Construct the filter based on the provided filters
+	filter := bson.M{}
+	for _, f := range filters {
+		for k, v := range f {
+			filter[k] = v
+		}
+	}
+
+	var start, limit int
+
+	if startStr, ok := filter["start"].(string); ok {
+		if startVal, err := strconv.Atoi(startStr); err == nil {
+			start = startVal
+		}
+	}
+	if limitStr, ok := filter["limit"].(string); ok {
+		if limitVal, err := strconv.Atoi(limitStr); err == nil {
+			limit = limitVal
+		}
+	}
+	delete(filter, "limit")
+	delete(filter, "start")
+
+	options := options.Find()
+	if start != 0 && limit != 0 {
+		// Set up options for Find method
+		options = options.SetSkip(int64(start)).SetLimit(int64(limit))
+	}
+
+	cursor, err := collection.Find(context.Background(), filter, options)
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +99,7 @@ func GetAllData(collectionName string) ([]map[string]interface{}, error) {
 
 	for cursor.Next(context.Background()) {
 		var result map[string]interface{}
+
 		if err := cursor.Decode(&result); err != nil {
 			return nil, err
 		}
@@ -79,8 +109,8 @@ func GetAllData(collectionName string) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func GetData(route utils.Route, arg string) (map[string]interface{}, error) {
-	db, err := mongoodb.InitDB()
+func GetData(dbConfig utils.Database, route utils.Route, arg string) (map[string]interface{}, error) {
+	db, err := mongoodb.InitDB(dbConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -106,8 +136,8 @@ func GetData(route utils.Route, arg string) (map[string]interface{}, error) {
 	return data, nil
 }
 
-func InsertData(route utils.Route, data map[string]interface{}) (interface{}, error) {
-	db, err := mongoodb.InitDB()
+func InsertData(dbConfig utils.Database, route utils.Route, data map[string]interface{}) (interface{}, error) {
+	db, err := mongoodb.InitDB(dbConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -132,8 +162,8 @@ func InsertData(route utils.Route, data map[string]interface{}) (interface{}, er
 	return nextValue, nil
 }
 
-func UpdateData(route utils.Route, data map[string]interface{}, arg string) error {
-	db, err := mongoodb.InitDB()
+func UpdateData(dbConfig utils.Database, route utils.Route, data map[string]interface{}, arg string) error {
+	db, err := mongoodb.InitDB(dbConfig)
 	if err != nil {
 		return err
 	}
@@ -159,8 +189,8 @@ func UpdateData(route utils.Route, data map[string]interface{}, arg string) erro
 	return nil
 }
 
-func DeleteData(route utils.Route, arg string) error {
-	db, err := mongoodb.InitDB()
+func DeleteData(dbConfig utils.Database, route utils.Route, arg string) error {
+	db, err := mongoodb.InitDB(dbConfig)
 	if err != nil {
 		return err
 	}
@@ -189,10 +219,11 @@ func DeleteData(route utils.Route, arg string) error {
 }
 
 func AuthenticateUser(username, password string) (bson.M, error) {
-	db, err := mongoodb.InitDB()
+	db, err := mongoodb.InitDBInternal()
 	if err != nil {
 		return nil, err
 	}
+	defer mongoodb.CloseDB()
 
 	collection := db.Collection("user_logins")
 

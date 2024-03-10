@@ -3,20 +3,20 @@ package mysql_configer
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"quick_forge/utils"
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func DataBaseString() string {
-	DbConfig := utils.GetProjectConfig().DB
+func DataBaseString(DbConfig utils.Database) string {
 	return fmt.Sprintf("%s:%s@tcp(%s)/%s", DbConfig.Username, DbConfig.Password, DbConfig.Host, DbConfig.DatabaseName)
 }
 
-func InitDB() *sql.DB {
+func InitDB(dbConfig utils.Database) *sql.DB {
 	var DB *sql.DB
-	DB, _ = sql.Open("mysql", DataBaseString())
+	DB, _ = sql.Open("mysql", DataBaseString(dbConfig))
 	// set max connection
 	DB.SetConnMaxLifetime(50)
 	// // set max idle connections
@@ -32,7 +32,7 @@ func InitDB() *sql.DB {
 	return DB
 }
 
-func CreateTableIfNotExist(route utils.Route) {
+func CreateTableIfNotExist(dbConfig utils.Database, route utils.Route) {
 	primaryKey, primaryKeyExists := route.DBTableStruct["primary_key"]
 	if !primaryKeyExists {
 		return
@@ -62,7 +62,7 @@ func CreateTableIfNotExist(route utils.Route) {
 	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (%s)",
 		route.DBTableName, strings.Join(columnDefinitions, ", "))
 	println(query)
-	db := InitDB()
+	db := InitDB(dbConfig)
 
 	db.Exec(query)
 	db.Close()
@@ -82,4 +82,29 @@ func getDbStructDataType(value map[string]interface{}) string {
 		}
 	}
 	return "TEXT"
+}
+
+func InitDBInternal() *sql.DB {
+	var DB *sql.DB
+	DbConfig := utils.Database{
+		Username:     os.Getenv("DB_USERNAME"),
+		Password:     os.Getenv("DB_PASS"),
+		Host:         os.Getenv("DB_HOST"),
+		DatabaseName: os.Getenv("DB_NAME"),
+	}
+	dbString := fmt.Sprintf("%s:%s@tcp(%s)/%s", DbConfig.Username, DbConfig.Password, DbConfig.Host, DbConfig.DatabaseName)
+	DB, _ = sql.Open("mysql", dbString)
+	// set max connection
+	DB.SetConnMaxLifetime(50)
+	// // set max idle connections
+	// DB.SetMaxIdleConns(10)
+	// // verify the connection
+
+	DB.SetMaxOpenConns(10000)
+
+	if err := DB.Ping(); err != nil {
+		fmt.Println("database connection fail")
+		panic(err)
+	}
+	return DB
 }

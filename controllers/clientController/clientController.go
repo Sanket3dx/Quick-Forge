@@ -3,7 +3,9 @@ package clientcontroller
 import (
 	"fmt"
 	"net/http"
+	"os"
 	mongooDbModel "quick_forge/database/mongooDb/models"
+	mysql_configer "quick_forge/database/mysql"
 	mysql_models "quick_forge/database/mysql/models"
 	"time"
 
@@ -31,10 +33,10 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
-	config := utils.GetProjectConfig()
+	dbType := os.Getenv("DB_TYPE")
 	secretKey := []byte("kaHFVKAJHFVKAJHFOIWGYFOIAUSFOAKSbe8127467824678fsd78gtasd68trgasdrgsrds7df8")
 
-	switch config.DB.DBType {
+	switch dbType {
 
 	case "mysql":
 		// Authenticate user
@@ -107,7 +109,13 @@ func LoginHandler(c *gin.Context) {
 }
 
 func GetAllRoutes(c *gin.Context) {
-	config := utils.GetProjectConfig()
+	projectName := utils.GetProjectNameFormGinContext(c)
+	configs := utils.Projects{}
+	if err := configs.LoadFromJSON("config/project_config.json"); err != nil {
+		utils.HandleError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	config := configs.FindProjectByName(projectName)
 	c.JSON(http.StatusOK, gin.H{
 		"error": false,
 		"data":  config.Routes,
@@ -115,44 +123,64 @@ func GetAllRoutes(c *gin.Context) {
 }
 
 func GetRoute(c *gin.Context) {
+	projectName := utils.GetProjectNameFormGinContext(c)
 	endpoint := c.Param("endpoint")
 
-	route, err := utils.GetRouteByEndpoint(endpoint)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": err.Error()})
+	configs := utils.Projects{}
+	if err := configs.LoadFromJSON("config/project_config.json"); err != nil {
+		utils.HandleError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	config := configs.FindProjectByName(projectName)
+	for _, route := range config.Routes {
+		if route.Endpoint == endpoint {
+			c.JSON(http.StatusOK, gin.H{"error": false, "data": route})
+			return
+		}
+	}
 
-	c.JSON(http.StatusOK, gin.H{"error": false, "data": route})
+	utils.HandleError(c, http.StatusNotFound, "Route not found")
 }
 
 func AddRouteHandler(c *gin.Context) {
-
+	projectName := utils.GetProjectNameFormGinContext(c)
 	var newRoute utils.Route
 	if err := c.ShouldBindJSON(&newRoute); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": err.Error()})
+		utils.HandleError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	err := utils.AddRoute(newRoute)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": err.Error()})
+	config := utils.Projects{}
+	if err := config.LoadFromJSON("config/project_config.json"); err != nil {
+		utils.HandleError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	if err := config.AddRoute(projectName, newRoute); err != nil {
+		utils.HandleError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	mysql_configer.CreateTableIfNotExist(config.FindProjectByName(projectName).DB, newRoute)
 
 	c.JSON(http.StatusOK, gin.H{"error": false, "message": "New route added successfully"})
 }
 
 func UpdateRouteHandler(c *gin.Context) {
+	projectName := utils.GetProjectNameFormGinContext(c)
 	var updatedRoute utils.Route
 	if err := c.ShouldBindJSON(&updatedRoute); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": err.Error()})
+		utils.HandleError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	err := utils.UpdateRoute(updatedRoute)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": err.Error()})
+	config := utils.Projects{}
+	if err := config.LoadFromJSON("config/project_config.json"); err != nil {
+		utils.HandleError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if err := config.UpdateRoute(projectName, updatedRoute); err != nil {
+		utils.HandleError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -160,11 +188,17 @@ func UpdateRouteHandler(c *gin.Context) {
 }
 
 func DeleteRouteHandler(c *gin.Context) {
+	projectName := utils.GetProjectNameFormGinContext(c)
 	endpoint := c.Param("endpoint")
 
-	err := utils.DeleteRoute(endpoint)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": err.Error()})
+	config := utils.Projects{}
+	if err := config.LoadFromJSON("config/project_config.json"); err != nil {
+		utils.HandleError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if err := config.DeleteRoute(projectName, endpoint); err != nil {
+		utils.HandleError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 

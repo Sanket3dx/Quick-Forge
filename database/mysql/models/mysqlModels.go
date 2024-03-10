@@ -4,14 +4,67 @@ import (
 	"fmt"
 	mysql_configer "quick_forge/database/mysql"
 	"quick_forge/utils"
+	"strconv"
 	"strings"
 )
 
-func GetAllData(tableName string) ([]map[string]interface{}, error) {
-	db := mysql_configer.InitDB()
+func GetAllData(dbConfig utils.Database, tableName string, filters []map[string]interface{}) ([]map[string]interface{}, error) {
+	db := mysql_configer.InitDB(dbConfig)
 	defer db.Close()
+
 	query := fmt.Sprintf("SELECT * FROM %s", tableName)
-	rows, err := db.Query(query)
+
+	// Prepare placeholders for filter conditions
+	var filterConditions []string
+	var filterValues []interface{}
+
+	var startVal, limitVal int
+	// Adding filters if provided
+	if len(filters) > 0 {
+		// Extract start and limit values from the filters
+		for _, filter := range filters {
+			if startStr, ok := filter["start"].(string); ok {
+				if start, err := strconv.Atoi(startStr); err == nil {
+					startVal = start
+				}
+			}
+			if limitStr, ok := filter["limit"].(string); ok {
+				if limit, err := strconv.Atoi(limitStr); err == nil {
+					limitVal = limit
+				}
+			}
+		}
+		query += " WHERE "
+		for i, filter := range filters {
+			// Remove start and limit keys from the filter
+			delete(filter, "start")
+			delete(filter, "limit")
+
+			for key, value := range filter {
+				filterConditions = append(filterConditions, fmt.Sprintf("%s = ?", key))
+				filterValues = append(filterValues, value)
+			}
+			if i < len(filters)-1 {
+				filterConditions = append(filterConditions, "AND")
+			}
+		}
+		query += strings.Join(filterConditions, " ")
+	}
+
+	// Adding pagination
+	if startVal != 0 && limitVal != 0 {
+		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limitVal, startVal-1)
+	}
+
+	// Prepare the SQL statement
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	// Executing the SQL statement
+	rows, err := stmt.Query(filterValues...)
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +107,8 @@ func GetAllData(tableName string) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func GetData(route utils.Route, arg string) (map[string]interface{}, error) {
-	db := mysql_configer.InitDB()
+func GetData(dbConfig utils.Database, route utils.Route, arg string) (map[string]interface{}, error) {
+	db := mysql_configer.InitDB(dbConfig)
 	defer db.Close()
 
 	// Ensure that the primary key column exists in the struct
@@ -110,8 +163,8 @@ func GetData(route utils.Route, arg string) (map[string]interface{}, error) {
 	return results, nil
 }
 
-func InsertData(tableName string, data map[string]interface{}) (int64, error) {
-	db := mysql_configer.InitDB()
+func InsertData(dbConfig utils.Database, tableName string, data map[string]interface{}) (int64, error) {
+	db := mysql_configer.InitDB(dbConfig)
 	defer db.Close()
 
 	// Create placeholders for the column names and values
@@ -146,8 +199,8 @@ func InsertData(tableName string, data map[string]interface{}) (int64, error) {
 	return insertID, nil
 }
 
-func UpdateData(route utils.Route, data map[string]interface{}, arg string) error {
-	db := mysql_configer.InitDB()
+func UpdateData(dbConfig utils.Database, route utils.Route, data map[string]interface{}, arg string) error {
+	db := mysql_configer.InitDB(dbConfig)
 	defer db.Close()
 	primaryKey, primaryKeyExists := route.DBTableStruct["primary_key"]
 	if !primaryKeyExists {
@@ -185,8 +238,8 @@ func UpdateData(route utils.Route, data map[string]interface{}, arg string) erro
 	return nil
 }
 
-func DeleteData(route utils.Route, arg string) error {
-	db := mysql_configer.InitDB()
+func DeleteData(dbConfig utils.Database, route utils.Route, arg string) error {
+	db := mysql_configer.InitDB(dbConfig)
 	defer db.Close()
 
 	// Ensure that the primary key column exists in the struct

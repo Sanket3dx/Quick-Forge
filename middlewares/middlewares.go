@@ -23,40 +23,23 @@ func brodcast(broadcast *chan utils.WebSocketMessage, message string) {
 }
 func MethodAllowedMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		config := utils.GetProjectConfig()
+		configs := utils.Projects{}
+		projectName := c.Param("projectName")
+		if err := configs.LoadFromJSON("config/project_config.json"); err != nil {
+			utils.HandleError(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		config := configs.FindProjectByName(projectName)
 		// Get the request method
 		requestMethod := c.Request.Method
 		requestedEndpoint := c.Param("endpoint")
 		var routeInfo utils.Route
-		endpointAllowed := false
-		for _, route := range config.Routes {
-			if route.Endpoint == requestedEndpoint {
-				routeInfo = route
-				switch requestMethod {
-				case "GET":
-					endpointAllowed = route.Methods.Get != nil && *route.Methods.Get
-				case "POST":
-					if c.Request.ContentLength == 0 {
-						c.JSON(http.StatusBadRequest, gin.H{
-							"error":   "Empty Request Body",
-							"message": "POST request body is empty",
-						})
-						c.Abort()
-						return
-					}
-					endpointAllowed = route.Methods.Post != nil && *route.Methods.Post
-				case "PUT":
-					endpointAllowed = route.Methods.Put != nil && *route.Methods.Put
-				case "DELETE":
-					endpointAllowed = route.Methods.Delete != nil && *route.Methods.Delete
-				}
-				break
-			}
-		}
+		endpointAllowed := utils.IsEndpointAllowed(&config, requestedEndpoint, requestMethod)
 		if endpointAllowed {
 			c.Set("routeInfo", routeInfo)
 			c.Set("auth", config.Auth)
-			c.Set("dbType", config.DB.DBType)
+			c.Set("dbConfig", config.DB)
+			c.Set("projectName", projectName)
 			c.Next()
 		} else {
 			c.JSON(http.StatusMethodNotAllowed, gin.H{
@@ -70,6 +53,14 @@ func MethodAllowedMiddleware() gin.HandlerFunc {
 
 func ValidateRequest() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if c.Request.ContentLength == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Empty Request Body",
+				"message": "POST request body is empty",
+			})
+			c.Abort()
+			return
+		}
 		routeConfig, exists := c.Get("routeInfo")
 		if !exists {
 			utils.HandleError(c, http.StatusBadRequest, "Route info not found in context")
@@ -139,6 +130,8 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		projectName := c.GetHeader("x-project-name")
+		c.Set("projectName", projectName)
 
 		c.Next()
 	}
