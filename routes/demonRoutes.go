@@ -62,6 +62,11 @@ func InitDemonRouter() {
 		clientRouter.POST("/routes", middlewares.AuthMiddleware(), clientcontroller.AddRouteHandler)
 		clientRouter.PUT("/routes", middlewares.AuthMiddleware(), clientcontroller.UpdateRouteHandler)
 		clientRouter.DELETE("/routes/:endpoint", middlewares.AuthMiddleware(), clientcontroller.DeleteRouteHandler)
+
+		clientRouter.GET("/projects-list", middlewares.AuthMiddleware(), clientcontroller.GetAllProjectNames)
+		clientRouter.GET("/projects", middlewares.AuthMiddleware(), clientcontroller.GetAllProjects)
+		clientRouter.GET("/projects/:project", middlewares.AuthMiddleware(), clientcontroller.GetProject)
+
 		clientRouter.GET("/ws", func(c *gin.Context) {
 			w := c.Writer
 			r := c.Request

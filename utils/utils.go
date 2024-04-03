@@ -99,8 +99,18 @@ func (p *Projects) FindProjectByName(name string) ProjectConfig {
 	return ProjectConfig{}
 }
 
+func (p *Projects) FindProjectIndexByName(name string) int {
+
+	for i, project := range p.Project {
+		if strings.EqualFold(project.ProjectName, name) {
+			return i
+		}
+	}
+	return -1
+}
 func (p *Projects) AddRoute(projectName string, newRoute Route) error {
 	project := p.FindProjectByName(projectName)
+	projectIndex := p.FindProjectIndexByName(projectName)
 	if project.ProjectName == "" {
 		return fmt.Errorf("project '%s' not found", projectName)
 	}
@@ -112,7 +122,7 @@ func (p *Projects) AddRoute(projectName string, newRoute Route) error {
 	}
 
 	project.Routes = append(project.Routes, newRoute)
-
+	p.Project[projectIndex] = project
 	// Save project configuration after adding a route
 	if err := p.SaveToJSON("config/project_config.json"); err != nil {
 		return fmt.Errorf("error saving project configuration: %v", err)
@@ -123,6 +133,7 @@ func (p *Projects) AddRoute(projectName string, newRoute Route) error {
 
 func (p *Projects) UpdateRoute(projectName string, updatedRoute Route) error {
 	project := p.FindProjectByName(projectName)
+	projectIndex := p.FindProjectIndexByName(projectName)
 	if project.ProjectName == "" {
 		return fmt.Errorf("project '%s' not found", projectName)
 	}
@@ -139,7 +150,7 @@ func (p *Projects) UpdateRoute(projectName string, updatedRoute Route) error {
 	if !found {
 		return fmt.Errorf("route '%s' not found", updatedRoute.Endpoint)
 	}
-
+	p.Project[projectIndex] = project
 	// Save project configuration after updating a route
 	if err := p.SaveToJSON("config/project_config.json"); err != nil {
 		return fmt.Errorf("error saving project configuration: %v", err)

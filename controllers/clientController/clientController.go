@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	mongooDbModel "quick_forge/database/mongooDb/models"
-	mysql_configer "quick_forge/database/mysql"
 	mysql_models "quick_forge/database/mysql/models"
 	"time"
 
@@ -160,7 +159,7 @@ func AddRouteHandler(c *gin.Context) {
 		utils.HandleError(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	mysql_configer.CreateTableIfNotExist(config.FindProjectByName(projectName).DB, newRoute)
+	//mysql_configer.CreateTableIfNotExist(config.FindProjectByName(projectName).DB, newRoute)
 
 	c.JSON(http.StatusOK, gin.H{"error": false, "message": "New route added successfully"})
 }
@@ -203,4 +202,50 @@ func DeleteRouteHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"error": false, "message": "Route deleted successfully"})
+}
+
+func GetAllProjects(c *gin.Context) {
+
+	config := utils.Projects{}
+	if err := config.LoadFromJSON("config/project_config.json"); err != nil {
+		utils.HandleError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"error": false,
+		"data":  config,
+	})
+}
+
+func GetAllProjectNames(c *gin.Context) {
+	config := utils.Projects{}
+	if err := config.LoadFromJSON("config/project_config.json"); err != nil {
+		utils.HandleError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	projectNames := make([]string, len(config.Project))
+	for i, project := range config.Project {
+		projectNames[i] = project.ProjectName
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"error": false,
+		"data":  projectNames,
+	})
+}
+
+func GetProject(c *gin.Context) {
+	project := c.Param("project")
+
+	configs := utils.Projects{}
+	if err := configs.LoadFromJSON("config/project_config.json"); err != nil {
+		utils.HandleError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	config := configs.FindProjectByName(project)
+	c.JSON(http.StatusOK, gin.H{
+		"error": false,
+		"data":  config,
+	})
 }
